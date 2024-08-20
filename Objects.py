@@ -114,7 +114,6 @@ class CBoard(CounterTop):
             self.stop_chopping
                 
         
-
     def draw_progress_bar(self):
         bar_length = 50
         bar_height = 10
@@ -167,4 +166,33 @@ class Fryer(CounterTop):
         fill = (self.progress / self.progress_max) * bar_length
         pygame.draw.rect(screen, GREEN, [self.rect.x + 16 - bar_length/2, self.rect.y - 20, fill, bar_height])
         pygame.draw.rect(screen, BLACK, [self.rect.x + 16 - bar_length/2, self.rect.y - 20, bar_length, bar_height], 2)
+        
+CBelts = pygame.sprite.Group()
+class CBelt(CounterTop):
+    def __init__(self, position, graphic = WAITER_POINT):
+        super().__init__(position, graphic)
+        CBelt.add(self)
+        
+    def put_resource(self, resource):
+        #Can only serve food on a plate
+        if(not isinstance(resource, Plate)):
+            return 0
+        
+        if(isinstance(resource, Plate)):
+            if(Menu.serve_dish(resource)):
+                [x.kill() for x in resource.dish]
+                resource.kill()
+
+class TrashCan(CBelt):
+    def __init__(self, position, graphic = TRASH_CAN):
+        super().__init__(position, graphic)
+    
+    #Overriding - same as CBelt, but without registering the dish
+    def put_resource(self, resource):
+        if(isinstance(resource, Plate)):
+            [x.kill() for x in resource.dish]
+            
+        resource.kill()
+
+
         

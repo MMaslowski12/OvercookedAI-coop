@@ -8,6 +8,10 @@ START_X, START_Y = (screen_width // 2 - 1/2*SIZE*COLS, screen_height // 2 - 1/2*
 END_X, END_Y = (START_X + SIZE*COLS, START_Y + SIZE*ROWS)
 screen = pygame.display.set_mode((screen_width, screen_height))
 
+
+import os
+os.chdir('Graphics')
+
 FLOOR_GRAPHIC = pygame.image.load('floor.png')
 WALL_GRAPHIC = pygame.image.load('wall.png')
 PLAYER1_GRAPHIC = pygame.image.load('player1.png')
