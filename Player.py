@@ -19,7 +19,7 @@ class Player(Object):
         
 
     
-    def update(self, keys):
+    def update(self, keys):        
         if(keys[self.controls['ACTION']] & isinstance(self.action, CBoard)):
            pass
        
@@ -59,6 +59,7 @@ class Player(Object):
         #Move up down, left, or right
         self.moved = False
         prex, prey = self.rect.x, self.rect.y
+        
         if keys[self.controls['UP']]:
             self.rect.y -= self.speed
             self.moved = True
@@ -76,7 +77,9 @@ class Player(Object):
             self.moved = True
             
         self.last_move = (self.rect.x - prex, self.rect.y - prey)
-        print("MOVES: ", self.moved)
+        if(self.moved):
+            print("MOVES")
+            
         if(self.moved):
             self.check_collision()
             
@@ -220,6 +223,29 @@ class Player(Object):
                        
         return numerical_data
         
-        
+from Board import player1_start, player2_start
+from constants import PLAYER1_GRAPHIC, PLAYER2_GRAPHIC
+
+player1_controls = {
+    "UP": pygame.K_w,
+    "DOWN": pygame.K_s,
+    "LEFT": pygame.K_a,
+    "RIGHT": pygame.K_d,
+    "ACTION": pygame.K_e
+}
+
+player2_controls = {
+    "UP": pygame.K_UP,
+    "DOWN": pygame.K_DOWN,
+    "LEFT": pygame.K_LEFT,
+    "RIGHT": pygame.K_RIGHT,
+    "ACTION": pygame.K_SPACE
+}
+
+Player1 = Player(player1_start, PLAYER1_GRAPHIC, player1_controls)
+Players.add(Player1)
+
+Player2 = Player(player2_start, PLAYER2_GRAPHIC, player2_controls)
+Players.add(Player2)        
         
     
