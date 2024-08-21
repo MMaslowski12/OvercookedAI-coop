@@ -116,7 +116,7 @@ class Dish(pygame.sprite.Sprite):
         self.order_in_queue = order
         
 
-class Menu():
+class MenuClass():
     def __init__(self):
         self.queue = []
         self.max_dishes = 5
