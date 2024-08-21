@@ -53,9 +53,7 @@ class Player(Object):
             if(action_made):
                 self.action_cooldown = 20
                     
-        
         if (action_made):
-           print("xd")
            return 0 
         
         #Move up down, left, or right
@@ -78,6 +76,7 @@ class Player(Object):
             self.moved = True
             
         self.last_move = (self.rect.x - prex, self.rect.y - prey)
+        print("MOVES: ", self.moved)
         if(self.moved):
             self.check_collision()
             
