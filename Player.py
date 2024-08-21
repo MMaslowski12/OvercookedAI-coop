@@ -17,17 +17,19 @@ class Player(Object):
         self.action_cooldown = 0
         Players.add(self)
         
+
     
     def update(self, keys):
-        #Actions - grabbing a resource, putting down a reource; only one action can be done in one update
-        self.action_cooldown -= 1
         if(keys[self.controls['ACTION']] & isinstance(self.action, CBoard)):
            pass
+       
         else:
            self.action = None 
-            
+           
+        self.action_cooldown -= 1
+        action_made = False
+         
         if (keys[self.controls['ACTION']] & (self.action_cooldown <= 0)):
-            action_made = False
             for source in Sources:
                 if(not action_made):
                     action_made = action_made or self.grab_resource(source)
@@ -51,6 +53,10 @@ class Player(Object):
             if(action_made):
                 self.action_cooldown = 20
                     
+        
+        if (action_made):
+           print("xd")
+           return 0 
         
         #Move up down, left, or right
         self.moved = False
@@ -171,7 +177,7 @@ class Player(Object):
             return True
         return False
     
-    def get_statexd(self):
+    def get_state(self):
         '''
         7 binary values describing Player's inventory. In respective order, these are values for whether the following is in Player's hands:
             - Plate

@@ -9,7 +9,6 @@ class ResourceGroup(pygame.sprite.Group):
         super().draw(surface)
 
 
-from Objects import CounterTop
 import math
 
 Resources = ResourceGroup()
@@ -31,8 +30,9 @@ class Resource(pygame.sprite.Sprite):
         
         
     def determine_position(self):
-        from Player import Player
-        if(isinstance(self.place, Player)):
+        place = self.place.__class__.__name__ #Going around the circular import problem.
+        
+        if(place == "Player"):
             player = self.place
             self.position = (player.rect.center[0] + 20, player.rect.center[1] - 20)
             self.image = self.icon
@@ -40,7 +40,7 @@ class Resource(pygame.sprite.Sprite):
                 self.image = self.chopped_icon
             self.rect = self.image.get_rect(center = self.position)
             
-        if(isinstance(self.place, CounterTop)):
+        if(place == "CounterTop"):
             table = self.place
             self.position = table.rect.center
             self.image = self.plain_graphic
@@ -48,7 +48,7 @@ class Resource(pygame.sprite.Sprite):
                 self.image = self.chopped_graphic
             self.rect = self.image.get_rect(center = self.position)
         
-        elif(isinstance(self.place, Plate)):
+        elif(place == "Plate"):
             pass #Its position is determined when the position of the place is determined - see below:
         
         #Displaying subicons of ingredients in a dish
@@ -157,15 +157,15 @@ class MenuClass():
             
         return False
     
-    def get_statecipa(self):
+    def get_state(self):
         '''
         Returns the state of the menu. 10 binary values. 2*ith value corresponds to whether the ith dish contains fish, and the 2*i + 1th value corresponds to whether the ith dish contains potatoes 
         '''
         
         state = np.zeros((5, 2)) 
         
-        for i in range(len(Menu.queue)):  
-            dish = Menu.queue[i]
+        for i in range(len(self.queue)):  
+            dish = self.queue[i]
             
             if dish.name == "Fish and Chips":
                 state[i, 0] = 1
@@ -175,3 +175,5 @@ class MenuClass():
                 state[i, 0] = 1  #Fish only
 
         return state.flatten()  #Flatten the array from 2D to 1D
+    
+Menu = MenuClass()

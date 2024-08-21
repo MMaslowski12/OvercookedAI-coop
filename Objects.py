@@ -1,6 +1,7 @@
 import pygame
 from constants import *
 import math
+from Foods import Plate, Menu
 
 class Object(pygame.sprite.Sprite):
     def __init__(self, position, graphic):
