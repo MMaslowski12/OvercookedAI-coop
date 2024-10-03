@@ -19,6 +19,28 @@ class Player(Object):
         
 
     
+    def action_possible(self):
+        action = None
+        for source in Sources:
+            if(not action_made):
+                action_made = action_made or self.grab_resource(source)
+            
+        for countertop in CounterTops:
+            if (not action_made):
+                action_made = action_made or self.put_down_resource(countertop)
+                
+            if(isinstance(countertop, CBoard)):
+                if (not action_made):
+                    action_made = action_made or self.chop(countertop)
+            
+            if(isinstance(countertop, Fryer)):
+                if (not action_made):
+                    action_made = action_made or self.fry(countertop)
+            
+            if (not action_made):
+                action_made = action_made or self.take_resource_from_table(countertop)
+        
+        
     def update(self, keys):        
         if(keys[self.controls['ACTION']] & isinstance(self.action, CBoard)):
            pass
@@ -77,8 +99,6 @@ class Player(Object):
             self.moved = True
             
         self.last_move = (self.rect.x - prex, self.rect.y - prey)
-        if(self.moved):
-            print("MOVES")
             
         if(self.moved):
             self.check_collision()

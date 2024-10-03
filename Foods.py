@@ -141,11 +141,11 @@ class MenuClass():
         decider = random.random()
         if(decider < prob_chips):
             #Add fish and chips
-            self.queue.append(Dish("Fish and Chips", [Fish, Potato], {Fish: 1, Potato: 1}, 100, len(self.queue)))
+            self.queue.append(Dish("Fish and Chips", [Fish, Potato], {Fish: 1, Potato: 1}, 1000, len(self.queue)))
             
         else:
             #Add just fish
-            self.queue.append(Dish("Fish", [Fish], {Fish: 1, Potato: 0}, 50, len(self.queue)))
+            self.queue.append(Dish("Fish", [Fish], {Fish: 1, Potato: 0}, 500, len(self.queue)))
             
     def serve_dish(self, plate):
         for i in range (len(self.queue)):
