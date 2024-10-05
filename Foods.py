@@ -1,5 +1,8 @@
 import pygame
 import numpy as np
+from constants import START_X, START_Y, END_X, WHITE
+import pygame
+pygame.init()
 
 class ResourceGroup(pygame.sprite.Group):
     #Overriding draw because of a specific nature of resources being drawn
@@ -18,6 +21,8 @@ class Resource(pygame.sprite.Sprite):
         self.plain_graphic = graphics["plain"]
         self.chopped_graphic = graphics["chopped"]
         self.chopped_icon = graphics["chopped_icon"]
+        self.fried_graphic = graphics["fried"]
+        self.fried_icon = graphics["fried_icon"]
         self.plated_icon = graphics["plated_icon"]
         self.chopped = False
         self.fried = False
@@ -31,28 +36,8 @@ class Resource(pygame.sprite.Sprite):
         
     def determine_position(self):
         place = self.place.__class__.__name__ #Going around the circular import problem.
-        
-        if(place == "Player"):
-            player = self.place
-            self.position = (player.rect.center[0] + 20, player.rect.center[1] - 20)
-            self.image = self.icon
-            if(self.chopped):
-                self.image = self.chopped_icon
-            self.rect = self.image.get_rect(center = self.position)
-            
-        if(place == "CounterTop"):
-            table = self.place
-            self.position = table.rect.center
-            self.image = self.plain_graphic
-            if(self.chopped):
-                self.image = self.chopped_graphic
-            self.rect = self.image.get_rect(center = self.position)
-        
-        elif(place == "Plate"):
-            pass #Its position is determined when the position of the place is determined - see below:
-        
         #Displaying subicons of ingredients in a dish
-        elif(isinstance(self, Plate) and len(self.dish) > 0):
+        if(isinstance(self, Plate) and len(self.dish) > 0):
             y_gap = 20
             x_gap = 10
             rows_no = math.ceil(len(self.dish)/2)
@@ -71,8 +56,35 @@ class Resource(pygame.sprite.Sprite):
                     x += x_gap
                 
                 ingredient.rect = ingredient.image.get_rect(center = (x, y))
+        
+        if(place == "Player"):
+            player = self.place
+            self.position = (player.rect.center[0] + 20, player.rect.center[1] - 20)
+            self.image = self.icon
+            if self.chopped:
+                self.image = self.chopped_icon
+                
+            if self.fried:
+                self.image = self.fried_icon
             
+            self.rect = self.image.get_rect(center = self.position)
             
+        if(place == "CounterTop" or place == "CBoard" or place == "Fryer"):
+            table = self.place
+            self.position = table.rect.center
+            self.image = self.plain_graphic
+            if self.chopped:
+                self.image = self.chopped_graphic
+                
+            if self.fried:
+                self.image = self.fried_graphic
+                
+            self.rect = self.image.get_rect(center = self.position)
+        
+        elif(place == "Plate"):
+            pass #Its position is determined when the position of the place is determined - see below:
+        
+
     def chop(self):
         self.chopped = True
         
@@ -92,16 +104,16 @@ class Plate(Resource):
     def __init__(self, place):
         super().__init__(PLATE_GRAPHICS, place)
         self.dish = []
-        self.dish_dict = {Fish: 0, Potato: 0}
+        self.dish_dict = {"Fish": 0, "Potato": 0}
     
     def add_ingredient(self, ingredient):
         self.dish.append(ingredient)
         ingredient.place = self
         if isinstance(ingredient, Fish):
-            self.dish_dict[Fish] += 1
+            self.dish_dict["Fish"] += 1
             
         elif isinstance(ingredient, Potato):
-            self.dish_dict[Potato] += 1
+            self.dish_dict["Potato"] += 1
             
 #Menu is a queue
 menu = []
@@ -119,16 +131,21 @@ class Dish(pygame.sprite.Sprite):
 class MenuClass():
     def __init__(self):
         self.queue = []
-        self.max_dishes = 5
+        self.max_dishes = 4
         self.frequency = 15 #Once every X seconds on average, there will be a new dish
         self.game_score = 0
+        
+        self.font = pygame.font.SysFont("Comic Sans MS", 10)
+        self.generate_new_dish()
+        self.width = 75
+        self.height = 50
     
     def update(self):
         #Add a dish 
         #The number of dishes should be capped
         if(len(self.queue) < self.max_dishes):
             decider = random.random()
-            probability = self.frequency/1000*60
+            probability = 1/60 * 1/self.frequency
             if (decider < probability):
                 self.generate_new_dish()
 
@@ -141,21 +158,57 @@ class MenuClass():
         decider = random.random()
         if(decider < prob_chips):
             #Add fish and chips
-            self.queue.append(Dish("Fish and Chips", [Fish, Potato], {Fish: 1, Potato: 1}, 1000, len(self.queue)))
+            self.queue.append(Dish("Fish and Chips", [Fish, Potato], {"Fish": 1, "Potato": 1}, 1000, len(self.queue)))
             
         else:
             #Add just fish
-            self.queue.append(Dish("Fish", [Fish], {Fish: 1, Potato: 0}, 500, len(self.queue)))
+            self.queue.append(Dish("Fish", [Fish], {"Fish": 1, "Potato": 0}, 500, len(self.queue)))
             
     def serve_dish(self, plate):
         for i in range (len(self.queue)):
             order = self.queue[i]
-            if (order.ingredients_dict[Fish] == plate.dish_dict[Fish]) and (order.ingredients_dict[Potato] == plate.dish_dict[Potato]):
+            if (order.ingredients_dict["Fish"] == plate.dish_dict["Fish"]) and (order.ingredients_dict["Potato"] == plate.dish_dict["Potato"]):
                 self.game_score += order.score
                 self.queue.pop(i)
                 return True
             
         return False
+    
+    def draw(self, screen):
+        #Draw a strip:
+        strip_left = START_X
+        strip_top = START_Y - self.height
+        strip_right = END_X
+        strip_bottom = START_Y
+        gap = 50
+        #fill out with background -- a wooden table?
+        
+        strip_color = (240, 230, 200)  # Light wood color
+        pygame.draw.rect(screen, strip_color, (strip_left, strip_top, strip_right - strip_left, strip_bottom - strip_top))
+        
+        for idx, dish in enumerate(self.queue):
+            left_x = strip_left + idx*(self.width + gap)
+            top_y = strip_top
+            pygame.draw.rect(screen, WHITE, (left_x, top_y, self.width, self.height))
+            pygame.draw.rect(screen, (0, 0, 0), (left_x, top_y, self.width, self.height), 2)
+            
+            dish_name_text = f"{dish.name}"
+            name_surface = self.font.render(dish_name_text, True, (0, 0, 0))
+            score_text = f"{dish.score} pts"
+            score_surface = self.font.render(score_text, True, (0, 0, 0))
+
+
+            # Blit the text onto the screen
+            text_x = left_x + (self.width - name_surface.get_width()) // 2
+            name_text_y = top_y + (self.height - name_surface.get_height()) // 2
+            score_text_y = name_text_y + name_surface.get_height()
+            screen.blit(name_surface, (text_x, name_text_y))
+            
+            screen.blit(name_surface, (text_x, name_text_y))
+            screen.blit(score_surface, (text_x, score_text_y))
+            
+            
+        
     
     def get_state(self):
         '''

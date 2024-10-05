@@ -12,7 +12,7 @@ class Player(Object):
         self.controls = controls
         self.hands = None
         self.speed = 4
-        self.action = None
+        self.chopping = None
         self.HAND_LENGTH = SIZE * math.sqrt(2) - 5 #Slightly smaller than allowing you to get it with a 45 degree angle
         self.action_cooldown = 0
         Players.add(self)
@@ -20,64 +20,42 @@ class Player(Object):
 
     
     def action_possible(self):
-        action = None
         for source in Sources:
-            if(not action_made):
-                action_made = action_made or self.grab_resource(source)
+            if self.grab_resource(source, execute = False):
+                return {"action": self.grab_resource, "input": source}
             
         for countertop in CounterTops:
-            if (not action_made):
-                action_made = action_made or self.put_down_resource(countertop)
+            if self.put_down_resource(countertop, execute=False):
+                return {"action": self.put_down_resource, "input": countertop}
                 
             if(isinstance(countertop, CBoard)):
-                if (not action_made):
-                    action_made = action_made or self.chop(countertop)
+                if self.chop(countertop, execute=False):
+                    return {"action": self.chop, "input": countertop}
             
             if(isinstance(countertop, Fryer)):
-                if (not action_made):
-                    action_made = action_made or self.fry(countertop)
+                if self.fry(countertop, execute=False):
+                    return {"action": self.fry, "input": countertop}
             
-            if (not action_made):
-                action_made = action_made or self.take_resource_from_table(countertop)
+                
+            if self.take_resource_from_table(countertop, execute=False):
+                return {"action": self.take_resource_from_table, "input": countertop}    
+                
+        return {"action": None, "input": None}
         
         
-    def update(self, keys):        
-        if(keys[self.controls['ACTION']] & isinstance(self.action, CBoard)):
-           pass
-       
-        else:
-           self.action = None 
-           
+        
+    def update(self, keys):       
         self.action_cooldown -= 1
-        action_made = False
          
         if (keys[self.controls['ACTION']] & (self.action_cooldown <= 0)):
-            for source in Sources:
-                if(not action_made):
-                    action_made = action_made or self.grab_resource(source)
-            
-            for countertop in CounterTops:
-                if (not action_made):
-                    action_made = action_made or self.put_down_resource(countertop)
-                    
-                if(isinstance(countertop, CBoard)):
-                    if (not action_made):
-                        action_made = action_made or self.chop(countertop)
-                
-                if(isinstance(countertop, Fryer)):
-                    if (not action_made):
-                        action_made = action_made or self.fry(countertop)
-                
-                if (not action_made):
-                    action_made = action_made or self.take_resource_from_table(countertop)
-                    
-                    
-            if(action_made):
+            self.chopping = None
+            action_dict = self.action_possible()
+            if(action_dict["action"] != None):
+                action_dict["action"](action_dict["input"])    
                 self.action_cooldown = 20
-                    
-        if (action_made):
-           return 0 
-        
+                return 0 
+                
+
         #Move up down, left, or right
         self.moved = False
         prex, prey = self.rect.x, self.rect.y
@@ -101,6 +79,7 @@ class Player(Object):
         self.last_move = (self.rect.x - prex, self.rect.y - prey)
             
         if(self.moved):
+            self.chopping = None
             self.check_collision()
             
     
@@ -125,15 +104,16 @@ class Player(Object):
             self.bounce_back()
     
     #See if the resource source is close enough and if so, grab a resource
-    def grab_resource(self, source):
+    def grab_resource(self, source, execute = True):
         if ((self.check_distance(source) < self.HAND_LENGTH) & (self.hands == None)):
-            source.give_resource(self)
+            if (execute):
+                source.give_resource(self)
             return True
         
         return False
             
     #See if the countertop is close enough and if so, put down a resource   
-    def put_down_resource(self, table):
+    def put_down_resource(self, table, execute = True):
         #Allow only scenarios where the table is within reach and hands are not empty        
         if(self.hands == None or self.check_distance(table) >= self.HAND_LENGTH):
             return False
@@ -142,60 +122,71 @@ class Player(Object):
         if (table.resource == None):
             condition = True
             #To put it on a fryer, it must be chopped
-            if(isinstance(table, Fryer) and not self.hands.chopped):
+            if (isinstance(table, Fryer) and not self.hands.chopped):
                 condition = False
                 
-            if(isinstance(self.hands, Plate) and (isinstance(table, Fryer) or isinstance(table, CBoard))):
+            if (isinstance(table, CBoard) and self.hands.chopped):
+                condition = False
+                
+            if (isinstance(self.hands, Plate) and (isinstance(table, Fryer) or isinstance(table, CBoard))):
                 condition = False
             
             if(condition):
-                table.put_resource(self.hands)
-                self.hands = None
+                if execute:
+                    table.put_resource(self.hands)
+                    self.hands = None
                 return True
             return False
         
         #Adding on a plate
         elif (isinstance(table.resource, Plate) and not isinstance(self.hands, Plate) and self.hands.fried):
-            table.resource.add_ingredient(self.hands)
-            self.hands = None
+            if execute:
+                table.resource.add_ingredient(self.hands)
+                self.hands = None
             return True
 
         return False
 
-    def take_resource_from_table(self, table):
+    def take_resource_from_table(self, table, execute = True):
         if ((self.check_distance(table) < self.HAND_LENGTH) & (self.hands == None) & (table.resource != None)):
             condition = True
             if(isinstance(table, CBoard)):
-                condition = table.resource.chopped
+                condition = condition and table.resource.chopped
                 
             if(isinstance(table, Fryer)):
-                condition = table.resource.fried
+                condition = condition and table.resource.fried
                 
             if(condition):
-                self.hands = table.resource
-                table.resource.place = self
-                table.remove_resource()
+                if execute:
+                    self.hands = table.resource
+                    table.resource.place = self
+                    table.remove_resource()
                 return True
+            
             else:
                 return False
         
         return False
 
-    def chop(self, CB):
+    def chop(self, CB, execute = True):
         if ((self.check_distance(CB) < self.HAND_LENGTH) & (CB.resource != None) & (self.hands == None)):
             if(CB.resource.chopped):
                 return False
-            CB.start_chopping(self)
-            self.action = CB
+            if execute:
+                self.chopping = CB
+                CB.start_chopping(self)
+                
             return True
         return False
     
-    def fry(self, Fryer):
+    def fry(self, Fryer, execute = True):
         if ((self.check_distance(Fryer) < self.HAND_LENGTH) & (Fryer.resource != None) & (self.hands == None)):
             if(Fryer.resource.fried or Fryer.frying):
                 return False
             
-            Fryer.start_frying()
+            if execute:
+                Fryer.start_frying()
+            
             return True
         return False
     

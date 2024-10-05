@@ -88,31 +88,32 @@ class CBoard(CounterTop):
         self.progress = 0
         self.adjust_knife()
     
+    
     def start_chopping(self, player):
-        self.chopping = True
         self.chopper = player
-
+    
     def stop_chopping(self):
         self.chopping = False
-        self.chopper = None
+    
+    def chop(self):
+        self.progress += 1
+        if self.progress >= self.progress_max:
+            self.progress = self.progress_max
+            self.stop_chopping()
+            self.resource.chop()
 
     def update(self): #SEE WHAT ACTION THE PLAYER FROM BEFORE MAKES NOW
+        if(self.chopper != None):
+            if(self.chopper.chopping == self):
+                self.chop()
+        
         if(self.resource != None):
             if(self.resource.chopped == False):
                 self.draw_progress_bar()
             
         if (not self.chopping):
             return None
-        
-        #If a chopper is still chopping
-        if(self.chopper.action == self):
-            self.progress += 1
-            if self.progress >= self.progress_max:
-                self.progress = self.progress_max
-                self.stop_chopping()
-                self.resource.chop()
-        else:
-            self.stop_chopping
+
                 
         
     def draw_progress_bar(self):
@@ -152,7 +153,6 @@ class Fryer(CounterTop):
         if (not self.frying):
             return None
         
-        #If a chopper is still chopping
         self.progress += 1
         if self.progress >= self.progress_max:
             self.progress = self.progress_max
@@ -176,13 +176,10 @@ class CBelt(CounterTop):
         
     def put_resource(self, resource):
         #Can only serve food on a plate
-        if(not isinstance(resource, Plate)):
-            return 0
-        
         if(isinstance(resource, Plate)):
-            if(Menu.serve_dish(resource)):
-                [x.kill() for x in resource.dish]
-                resource.kill()
+            Menu.serve_dish(resource)
+            [x.kill() for x in resource.dish]
+            resource.kill()
 
 class TrashCan(CBelt):
     def __init__(self, position, graphic = TRASH_CAN):
@@ -191,8 +188,11 @@ class TrashCan(CBelt):
     #Overriding - same as CBelt, but without registering the dish
     def put_resource(self, resource):
         if(isinstance(resource, Plate)):
-            [x.kill() for x in resource.dish]
+            for x in resource.dish:
+                x.place = None
+                x.kill()
             
+        resource.place = None
         resource.kill()
 
 
