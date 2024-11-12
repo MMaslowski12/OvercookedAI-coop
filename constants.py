@@ -112,3 +112,6 @@ FISH_GRAPHICS = {
     "fried_icon": FISH_FRIED_ICON,
     "plated_icon": pygame.transform.scale(FISH_FRIED_ICON, (16, 16))
 }
+
+#Go back to parent directory
+os.chdir("..")
