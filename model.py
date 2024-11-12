@@ -1,4 +1,4 @@
-from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, Flatten, Dense, Concatenate, Lambda
+from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, Flatten, Dense, Concatenate, Lambda, BatchNormalization, ReLU
 from tensorflow.keras.models import Model
 import tensorflow as tf
 
@@ -9,19 +9,21 @@ if __name__ == "__main__":
 
     #This defins the network through which the visual input (the screenshot of the board) will go through before joining other input\\
     x = Conv2D(8, (3, 3), activation='relu')(image_resized)
-    x = MaxPooling2D((2, 2))(x)
+    x = MaxPooling2D(3, 3)(x)
     x = Conv2D(16, (3, 3), activation='relu')(x)
-    x = MaxPooling2D((2, 2))(x)
+    x = MaxPooling2D((3, 3))(x)
+    x = Conv2D(32, (3, 3), activation='relu')(x)
+    x = MaxPooling2D((3, 3))(x)
     x = Flatten()(x)
 
-
+    x = Dense(128, activation='relu')(x)
+    x = Dense(64, activation='relu')(x)
     additional_input = Input(shape=(24,)) 
     combined = Concatenate()([x, additional_input])
-
-    output = Dense(32, activation='relu')(combined)
-    output = Dense(10)(output)
+    x = Dense(32, activation='relu')(combined)
+    output = Dense(10, activation='linear')(x)
     model = Model(inputs=[image_input, additional_input], outputs=output)
-    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+    model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
 
-    print(model.summary())
+    model.summary()
     model.save('Misha.h5')

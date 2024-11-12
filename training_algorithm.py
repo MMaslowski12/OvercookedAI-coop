@@ -1,6 +1,7 @@
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import load_model
+import time
 
 Misha = load_model('Misha.h5')
 
@@ -32,7 +33,7 @@ def add_memory(vis_state, num_state, final_vis_state, final_num_state, action_id
 # def save_memory_buffer():
 #     np.save('memory_buffer.npy', memory_buffer)
     
-def train_Misha(batch_size = 64):
+def train_Misha(batch_size = 64, epochs = 5):
     #Get the memory buffer
     #Shuffle it, get the batches
     #Train it on every batch
@@ -54,26 +55,32 @@ def train_Misha(batch_size = 64):
         loss2 = tf.reduce_mean(tf.square(y_target - q_values_of_actions[:, 1:2]))
         return (loss1+loss2)/2
     
-    dataset = tf.data.Dataset.from_tensor_slices((vis_state_buffer, num_state_buffer, action_idxs_buffer, y_target_buffer))
-    dataset = dataset.shuffle(buffer_size=len(vis_state_buffer)).batch(batch_size)
+    losses = np.array([])
     
-    for vis_batch, num_batch, action_idxs_batch, y_target_batch in dataset:
-        with tf.GradientTape() as tape:
-            q_preds = Misha((vis_batch, num_batch))
-            loss_value = loss(q_preds, action_idxs_batch, y_target_batch)
+    for _ in range (epochs):
+        dataset = tf.data.Dataset.from_tensor_slices((vis_state_buffer, num_state_buffer, action_idxs_buffer, y_target_buffer))
+        dataset = dataset.shuffle(buffer_size=len(vis_state_buffer)).batch(batch_size)
+        losses_in_epoch = np.array([])
+        for vis_batch, num_batch, action_idxs_batch, y_target_batch in dataset:
+            with tf.GradientTape() as tape:
+                q_preds = Misha((vis_batch, num_batch))
+                loss_value = loss(q_preds, action_idxs_batch, y_target_batch)
 
-        # Calculate gradients and apply
-        gradients = tape.gradient(loss_value, Misha.trainable_variables)
-        optimizer.apply_gradients(zip(gradients, Misha.trainable_variables))
-    
-        
+            # Calculate gradients and apply
+            gradients = tape.gradient(loss_value, Misha.trainable_variables)
+            optimizer.apply_gradients(zip(gradients, Misha.trainable_variables))
+            losses_in_epoch = np.append(losses_in_epoch, loss_value)
+            
+        losses = np.append(losses, losses_in_epoch)
+            
     vis_state_buffer = np.empty((0, 434, 576, 3), dtype='float32')  # Visual state
     num_state_buffer = np.empty((0, 24), dtype='float32')           # Numerical state
     action_idxs_buffer = np.empty((0, 2), dtype='int32')              # Action indices
     y_target_buffer = np.empty((0, 1), dtype='float32')            # Target values
-    
-    print("Misha updated")
+    start_saving = time.time()
     Misha.save('Misha.h5')
+    saving_time = time.time() - start_saving
+    return (losses, saving_time)
 
 
 
