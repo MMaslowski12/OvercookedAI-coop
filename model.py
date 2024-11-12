@@ -1,7 +1,8 @@
 from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, Flatten, Dense, Concatenate, Lambda, BatchNormalization, ReLU
 from tensorflow.keras.models import Model
 import tensorflow as tf
-
+print(tf.__version__)
+!pip install --user --upgrade tensorflow     
 
 if __name__ == "__main__":
     image_input = Input(shape=(434, 576, 3))
