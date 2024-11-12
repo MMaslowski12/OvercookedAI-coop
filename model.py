@@ -26,4 +26,4 @@ if __name__ == "__main__":
     model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
 
     model.summary()
-    model.save("Misha")
+    model.save("Misha.keras")

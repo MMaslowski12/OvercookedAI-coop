@@ -3,7 +3,7 @@ import tensorflow as tf
 from tensorflow.keras.models import load_model
 import time
 
-Misha = load_model("Misha")
+Misha = load_model("Misha.keras")
 
 vis_state_buffer = np.empty((0, 434, 576, 3), dtype='float32')  # Visual state
 num_state_buffer = np.empty((0, 24), dtype='float32')           # Numerical state
@@ -78,7 +78,7 @@ def train_Misha(batch_size = 64, epochs = 5):
     action_idxs_buffer = np.empty((0, 2), dtype='int32')              # Action indices
     y_target_buffer = np.empty((0, 1), dtype='float32')            # Target values
     start_saving = time.time()
-    Misha.save("Misha")
+    Misha.save("Misha.keras")
     saving_time = time.time() - start_saving
     return (losses, saving_time)
 
