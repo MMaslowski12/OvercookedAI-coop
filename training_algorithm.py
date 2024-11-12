@@ -1,9 +1,9 @@
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.models import load_model
 import time
 
-Misha = load_model("Misha.keras")
+Misha = tf.keras.saving.load_model("Misha.keras")
+
 
 vis_state_buffer = np.empty((0, 434, 576, 3), dtype='float32')  # Visual state
 num_state_buffer = np.empty((0, 24), dtype='float32')           # Numerical state
