@@ -14,16 +14,16 @@ os.chdir('Graphics')
 
 
 
-FLOOR_GRAPHIC = pygame.image.load('floor.png')
-WALL_GRAPHIC = pygame.image.load('wall.png')
+FLOOR_GRAPHIC = pygame.image.load('Floor.png')
+WALL_GRAPHIC = pygame.image.load('Wall.png')
 PLAYER1_GRAPHIC = pygame.image.load('player1.png')
 PLAYER2_GRAPHIC = pygame.image.load('player2.png')
-FISH_ICON = pygame.image.load('fish.png')
+FISH_ICON = pygame.image.load('Fish.png')
 FISH_PLAIN = pygame.image.load('Plain_fish.png')
 FISH_CHOPPED = pygame.image.load("Chopped_fish.png")
 FISH_CHOPPED_ICON = pygame.image.load("Chopped_fish_icon.png")
 
-POTATO_ICON = pygame.image.load('potato.png')
+POTATO_ICON = pygame.image.load('Potato.png')
 POTATO_PLAIN = pygame.image.load('Plain_potato.png')
 POTATO_CHOPPED = pygame.image.load("Chopped_potato.png")
 POTATO_CHOPPED_ICON = pygame.image.load("Chopped_potato_icon.png")
