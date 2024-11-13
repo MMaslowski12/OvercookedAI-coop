@@ -33,7 +33,7 @@ def add_memory(vis_state, num_state, final_vis_state, final_num_state, action_id
 # def save_memory_buffer():
 #     np.save('memory_buffer.npy', memory_buffer)
     
-def train_Misha(batch_size = 64, epochs = 5):
+def train_Misha(batch_size = 64, epochs = 3):
     #Get the memory buffer
     #Shuffle it, get the batches
     #Train it on every batch
