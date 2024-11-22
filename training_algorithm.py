@@ -10,7 +10,7 @@ num_state_buffer = np.empty((0, 24), dtype='float32')           # Numerical stat
 action_idxs_buffer = np.empty((0, 2), dtype='int32')              # Action indices
 y_target_buffer = np.empty((0, 1), dtype='float32')            # Target values
 
-optimizer = tf.keras.optimizers.legacy.Adam()
+optimizer = tf.keras.optimizers.legacy.Adam(learning_rate =0.0001)
 
 def add_memory(vis_state, num_state, final_vis_state, final_num_state, action_idxs, reward, gamma = 0.9):
     #Add a data about a state and a reward that occured during playing of the game
@@ -60,7 +60,7 @@ def train_Misha(batch_size = 64, epochs = 3):
     for _ in range (epochs):
         dataset = tf.data.Dataset.from_tensor_slices((vis_state_buffer, num_state_buffer, action_idxs_buffer, y_target_buffer))
         dataset = dataset.shuffle(buffer_size=len(vis_state_buffer)).batch(batch_size)
-        losses_in_epoch = np.array([])
+        losses_in_epoch = np.array([]) 
         for vis_batch, num_batch, action_idxs_batch, y_target_batch in dataset:
             with tf.GradientTape() as tape:
                 q_preds = Misha((vis_batch, num_batch))

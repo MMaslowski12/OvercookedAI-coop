@@ -51,7 +51,7 @@ class Player(Object):
             self.chopping = None
             action_dict = self.action_possible()
             if(action_dict["action"] != None):
-                action_dict["action"](action_dict["input"])    
+                action_dict["action"](action_dict["input"])
                 self.action_cooldown = 20
                 return 0 
                 
@@ -254,9 +254,6 @@ player2_controls = {
 }
 
 Player1 = Player(player1_start, PLAYER1_GRAPHIC, player1_controls)
-Players.add(Player1)
-
-Player2 = Player(player2_start, PLAYER2_GRAPHIC, player2_controls)
-Players.add(Player2)        
+Player2 = Player(player2_start, PLAYER2_GRAPHIC, player2_controls) 
         
     

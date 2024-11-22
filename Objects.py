@@ -113,8 +113,6 @@ class CBoard(CounterTop):
             
         if (not self.chopping):
             return None
-
-                
         
     def draw_progress_bar(self):
         bar_length = 50
@@ -145,28 +143,27 @@ class Fryer(CounterTop):
         super().remove_resource()
         self.progress = 0
 
-    def update(self): #SEE WHAT ACTION THE PLAYER FROM BEFORE MAKES NOW
+    def update(self): #SEE WHAT ACTION THE PLAYER FROM BEFORE MAKES 
+        if (self.frying):
+            self.progress += 1
+            if self.progress >= self.progress_max:
+                self.progress = self.progress_max
+                self.stop_frying()
+                self.resource.fry()
+                
         if(self.resource != None):
             if(self.resource.fried == False):
                 self.draw_progress_bar()
             
         if (not self.frying):
             return None
-        
-        self.progress += 1
-        if self.progress >= self.progress_max:
-            self.progress = self.progress_max
-            self.stop_frying()
-            self.resource.fry()
-                
-        
 
     def draw_progress_bar(self):
-        bar_length = 50
+        bar_length = 50 #Should be 50
         bar_height = 10
         fill = (self.progress / self.progress_max) * bar_length
         pygame.draw.rect(screen, GREEN, [self.rect.x + 16 - bar_length/2, self.rect.y - 20, fill, bar_height])
-        pygame.draw.rect(screen, BLACK, [self.rect.x + 16 - bar_length/2, self.rect.y - 20, bar_length, bar_height], 2)
+        pygame.draw.rect(screen, BLACK, [self.rect.x + 16 - bar_length/2, self.rect.y - 20, bar_length, bar_height], 2)    
         
 CBelts = pygame.sprite.Group()
 class CBelt(CounterTop):
