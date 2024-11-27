@@ -1,8 +1,17 @@
 import numpy as np
 import tensorflow as tf
-import keras
 import time
-Misha = keras.models.load_model("Misha.keras", safe_mode=False)
+import subprocess
+import sys
+try:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", "tensorflow"])
+    print("TensorFlow has been successfully updated.")
+    
+except subprocess.CalledProcessError as e:
+    print(f"An error occurred while updating TensorFlow: {e}")
+
+print(tf.__version__)
+Misha = tf.keras.models.load_model("Misha.keras", safe_mode=False)
 
 
 vis_state_buffer = np.empty((0, 434, 576, 3), dtype='float32')  # Visual state
@@ -10,7 +19,7 @@ num_state_buffer = np.empty((0, 24), dtype='float32')           # Numerical stat
 action_idxs_buffer = np.empty((0, 2), dtype='int32')              # Action indices
 y_target_buffer = np.empty((0, 1), dtype='float32')            # Target values
 
-optimizer = tf.keras.optimizers.legacy.Adam(learning_rate =0.0001)
+optimizer = tf.keras.optimizers.Adam(learning_rate =0.0001)
 
 def add_memory(vis_state, num_state, final_vis_state, final_num_state, action_idxs, reward, gamma = 0.9):
     #Add a data about a state and a reward that occured during playing of the game
