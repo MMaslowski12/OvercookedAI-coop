@@ -1,15 +1,15 @@
 import numpy as np
-import tensorflow as tf
 import time
 import subprocess
 import sys
 try:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", "tensorflow"])
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "tensorflow==2.18.0"])
     print("TensorFlow has been successfully updated.")
     
 except subprocess.CalledProcessError as e:
     print(f"An error occurred while updating TensorFlow: {e}")
 
+import tensorflow as tf
 print(tf.__version__)
 def resize_image(image):
     return tf.image.resize(image, (108, 144))

@@ -1,7 +1,8 @@
 import subprocess
 import sys
 try:
-    subprocess.check_call([sys.executable, "pip", "install", "--upgrade", "tensorflow"])
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", "pip"])
+    subprocess.check_call([sys.executable, "-m", "pip ", " install", " tensorflow==2.18.0"])
     print("TensorFlow has been successfully updated.")
     
 except subprocess.CalledProcessError as e:
