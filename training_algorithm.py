@@ -11,8 +11,10 @@ except subprocess.CalledProcessError as e:
     print(f"An error occurred while updating TensorFlow: {e}")
 
 print(tf.__version__)
-Misha = tf.keras.models.load_model("Misha.keras", safe_mode=False)
+def resize_image(image):
+    return tf.image.resize(image, (108, 144))
 
+Misha = tf.keras.models.load_model("Misha.keras", custom_objects={'resize_image': resize_image}, safe_mode=False)
 
 vis_state_buffer = np.empty((0, 434, 576, 3), dtype='float32')  # Visual state
 num_state_buffer = np.empty((0, 24), dtype='float32')           # Numerical state
