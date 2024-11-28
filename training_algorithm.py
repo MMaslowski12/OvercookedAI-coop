@@ -4,6 +4,7 @@ import subprocess
 import sys
 try:
     subprocess.check_call([sys.executable, "-m", "pip", "install", "tensorflow==2.18.0"])
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "--extra-index-url", "https://pypi.nvidia.com", "nvidia-cudnn-cu11"])
     print("TensorFlow has been successfully updated.")
     
 except subprocess.CalledProcessError as e:
