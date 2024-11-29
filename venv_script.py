@@ -28,8 +28,9 @@ def get_requirements(venv_name="venv", requirements_file="requirements.txt"):
     venv_python = os.path.join(venv_name, "bin", "python")
     subprocess.check_call([venv_python, "-m", "pip", "install", "-r", requirements_file])
 
-def setup_venv():
+def setup_venv(venv_python):
     packages = [
+        "-- upgrade pip",
         "setuptools",
         "numpy",
         "tensorflow==2.15.0",
@@ -45,7 +46,7 @@ def setup_venv():
 
     def install(package):
         """Install a package using pip."""
-        subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+        subprocess.check_call([venv_python, "-m", "pip", "install", package])
 
     # Install all packages
     for package in packages:
@@ -62,5 +63,5 @@ def setup_venv():
 
 if __name__ == "__main__":
     # List of packages to install
-    activate_venv()
-    setup_venv()
+    venv_python = activate_venv()
+    setup_venv(venv_python)
