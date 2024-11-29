@@ -30,7 +30,6 @@ def get_requirements(venv_name="venv", requirements_file="requirements.txt"):
 
 def setup_venv(venv_python):
     packages = [
-        "-- upgrade pip",
         "setuptools",
         "numpy",
         "tensorflow==2.15.0",
