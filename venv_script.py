@@ -16,17 +16,20 @@ def install_requirements(requirements_file="requirements.txt"):
 def freeze():
     subprocess.check_call(f"{sys.executable} -m pip freeze > requirements.txt", shell=True)
 
-def activate_venv(venv_name="venv", requirements_file="requirements.txt"):
+def activate_venv(venv_name="venv"):
     if not os.path.exists(venv_name):
         subprocess.check_call([sys.executable, "-m", "venv", venv_name])
         print("Venv created")
     
+def get_requirements(venv_name="venv", requirements_file="requirements.txt"):
     #Virtual environment - set it up as venv_python to activate commands with it later
     venv_python = os.path.join(venv_name, "bin", "python")
     subprocess.check_call([venv_python, "-m", "pip", "install", "-r", requirements_file])
 
 def setup_venv():
     packages = [
+        "distutils",
+        "setuptools",
         "numpy",
         "tensorflow==2.15.0",
         "keras",
@@ -38,6 +41,11 @@ def setup_venv():
         "wheel",
         "jupyter",
         "ipykernel"
+        "cffi",
+        "multidict",
+        "yarl",
+        "async-timeout",
+        "attrs",
     ]
 
     def install(package):
@@ -59,4 +67,5 @@ def setup_venv():
 
 if __name__ == "__main__":
     # List of packages to install
+    activate_venv()
     setup_venv()

@@ -27,3 +27,5 @@ if __name__ == "__main__":
 
     model.summary()
     # model.save("Misha.keras")
+
+
