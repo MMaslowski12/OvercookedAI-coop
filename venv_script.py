@@ -17,11 +17,11 @@ def freeze():
     subprocess.check_call(f"{sys.executable} -m pip freeze > requirements.txt", shell=True)
 
 def activate_venv(venv_name="venv"):
-    venv_python = os.path.join(venv_name, "bin", "python")
     if not os.path.exists(venv_name):
         subprocess.check_call([sys.executable, "-m", "venv", venv_name])
         print("Venv created")
-    return os.path.join(venv_name, "bin", "python")
+    venv_python = os.path.join(venv_name, "bin", "python")
+    return venv_python
     
 def get_requirements(venv_name="venv", requirements_file="requirements.txt"):
     #Virtual environment - set it up as venv_python to activate commands with it later
