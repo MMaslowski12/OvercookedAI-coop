@@ -2,7 +2,9 @@ import numpy as np
 import tensorflow as tf
 import keras
 import time
-Misha = keras.models.load_model("Misha.keras", safe_mode=False)
+print(tf.__version__)
+Misha = tf.keras.models.load_model("Misha.keras", safe_mode=False)
+
 
 
 vis_state_buffer = np.empty((0, 434, 576, 3), dtype='float32')  # Visual state

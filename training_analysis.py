@@ -1,5 +1,5 @@
 import numpy as np
-import matplotlib.pyplot as plt
+source venv/bin/activate
 
 # Load the numpy file
 file_path = 'losses.npy'
