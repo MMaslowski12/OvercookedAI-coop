@@ -32,15 +32,13 @@ def setup_venv(venv_python):
     packages = [
         "setuptools",
         "numpy",
-        "tensorflow==2.15.0",
-        "keras",
+        "tensorflow",
         "pygame",
         "matplotlib",
-        "scipy",
-        "six",
-        "wheel",
         "jupyter",
-        "notebook"
+        "notebook",
+        "memory_profiler",
+        "importlib",
     ]
 
     def install(package):
@@ -62,5 +60,5 @@ def setup_venv(venv_python):
 
 if __name__ == "__main__":
     # List of packages to install
-    venv_python = activate_venv()
+    venv_python = activate_venv(venv_name="testvenv")
     setup_venv(venv_python)
