@@ -39,7 +39,6 @@ def setup_venv(venv_python):
         "jupyter",
         "notebook",
         "memory_profiler",
-        "importlib",
     ]
 
     def install(package):
