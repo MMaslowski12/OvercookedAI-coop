@@ -39,7 +39,8 @@ def setup_venv(venv_python):
         "matplotlib",
         "jupyter",
         "notebook",
-        "ipykernel"
+        "ipykernel",
+        "sounddevice"
     ]
 
     def install(package):
