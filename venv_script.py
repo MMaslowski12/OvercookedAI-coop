@@ -29,23 +29,22 @@ def get_requirements(venv_name="venv", requirements_file="requirements.txt"):
     subprocess.check_call([venv_python, "-m", "pip", "install", "-r", requirements_file])
 
 def setup_venv(venv_python):
+    subprocess.check_call([venv_python, "-m", "pip", "install", "--upgrade", "pip"])
     packages = [
         "setuptools",
         "numpy",
-        "tensorflow==2.15.0",
+        "tensorflow",
         "keras",
         "pygame",
         "matplotlib",
-        "scipy",
-        "six",
-        "wheel",
         "jupyter",
-        "notebook"
+        "notebook",
+        "ipykernel"
     ]
 
     def install(package):
         """Install a package using pip."""
-        subprocess.check_call([venv_python, "-m", "pip", "install", package])
+        subprocess.check_call([venv_python, "-m", "pip", "install", "-q", package])
 
     # Install all packages
     for package in packages:

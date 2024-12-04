@@ -1,11 +1,11 @@
-from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, Flatten, Dense, Concatenate, Lambda, BatchNormalization, ReLU
+from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, Flatten, Dense, Concatenate, Resizing
 from tensorflow.keras.models import Model
 import tensorflow as tf
 print(tf.__version__)
 
 if __name__ == "__main__":
     image_input = Input(shape=(434, 576, 3))
-    image_resized = Lambda(lambda image: tf.image.resize(image, (108, 144)))(image_input) 
+    image_resized = Resizing(108, 144)(image_input) 
 
     #This defins the network through which the visual input (the screenshot of the board) will go through before joining other input\\
     x = Conv2D(8, (3, 3), activation='relu')(image_resized)
@@ -26,6 +26,6 @@ if __name__ == "__main__":
     model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
 
     model.summary()
-    # model.save("Misha.keras")
+    model.save("Misha.keras")
 
 

@@ -12,7 +12,7 @@ num_state_buffer = np.empty((0, 24), dtype='float32')           # Numerical stat
 action_idxs_buffer = np.empty((0, 2), dtype='int32')              # Action indices
 y_target_buffer = np.empty((0, 1), dtype='float32')            # Target values
 
-optimizer = tf.keras.optimizers.legacy.Adam(learning_rate =0.0001)
+optimizer = tf.keras.optimizers.Adam(learning_rate =0.0001)
 
 def add_memory(vis_state, num_state, final_vis_state, final_num_state, action_idxs, reward, gamma = 0.9):
     #Add a data about a state and a reward that occured during playing of the game
