@@ -40,6 +40,7 @@ def setup_venv(venv_python):
         "jupyter",
         "notebook",
         "ipykernel",
+        "portaudio",
         "sounddevice"
     ]
 
