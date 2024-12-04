@@ -59,6 +59,10 @@ def setup_venv(venv_python):
     print("All packages installed (or attempted).")
     freeze()
     
+    subprocess.check_call([venv_python, "-m", "ipykernel" ,"install", "--user", "--name=venv"])
+    print("Installed the kernel")
+    
+    
 
 if __name__ == "__main__":
     # List of packages to install
