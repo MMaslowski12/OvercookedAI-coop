@@ -30,8 +30,6 @@ def get_requirements(venv_name="venv", requirements_file="requirements.txt"):
 
 def setup_venv(venv_python):
     subprocess.check_call([venv_python, "-m", "pip", "install", "--upgrade", "pip"])
-    subprocess.check_call(f"{venv_python} -m pip install pipwin", shell=True)
-    subprocess.check_call(f"{venv_python} -m pipwin install pyaudio", shell=True)
     
     packages = [
         "setuptools",
@@ -43,7 +41,6 @@ def setup_venv(venv_python):
         "jupyter",
         "notebook",
         "ipykernel",
-        "sounddevice"
     ]
 
     
