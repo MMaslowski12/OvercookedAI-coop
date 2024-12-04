@@ -30,7 +30,6 @@ def get_requirements(venv_name="venv", requirements_file="requirements.txt"):
 
 def setup_venv(venv_python):
     subprocess.check_call([venv_python, "-m", "pip", "install", "--upgrade", "pip"])
-    
     packages = [
         "setuptools",
         "numpy",
