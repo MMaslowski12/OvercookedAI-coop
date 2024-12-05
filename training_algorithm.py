@@ -59,6 +59,7 @@ def train_Misha(batch_size = 64, epochs = 3):
     
     losses = np.array([])
     
+    
     for _ in range (epochs):
         dataset = tf.data.Dataset.from_tensor_slices((vis_state_buffer, num_state_buffer, action_idxs_buffer, y_target_buffer))
         dataset = dataset.shuffle(buffer_size=len(vis_state_buffer)).batch(batch_size)
@@ -73,7 +74,7 @@ def train_Misha(batch_size = 64, epochs = 3):
             optimizer.apply_gradients(zip(gradients, Misha.trainable_variables))
             losses_in_epoch = np.append(losses_in_epoch, loss_value)
             
-        losses = np.append(losses, losses_in_epoch)
+        # losses = np.append(losses, losses_in_epoch)
             
     vis_state_buffer = np.empty((0, 434, 576, 3), dtype='float32')  # Visual state
     num_state_buffer = np.empty((0, 24), dtype='float32')           # Numerical state
