@@ -7,10 +7,10 @@ Misha = tf.keras.models.load_model("Misha.keras", safe_mode=False)
 
 
 
-vis_state_buffer = np.empty((0, 434, 576, 3), dtype='float32')  # Visual state
-num_state_buffer = np.empty((0, 24), dtype='float32')           # Numerical state
-action_idxs_buffer = np.empty((0, 2), dtype='int32')              # Action indices
-y_target_buffer = np.empty((0, 1), dtype='float32')            # Target values
+vis_state_buffer = []  # Visual state
+num_state_buffer = []        # Numerical state
+action_idxs_buffer = []              # Action indices
+y_target_buffer = []            # Target values
 
 optimizer = tf.keras.optimizers.Adam(learning_rate =0.0001)
 
@@ -27,10 +27,10 @@ def add_memory(vis_state, num_state, final_vis_state, final_num_state, action_id
     action_idxs = np.expand_dims(action_idxs, axis=0)
     
     #Add: state, indices of actions, a reward to the memory buffer
-    vis_state_buffer = np.vstack((vis_state_buffer, vis_state))
-    num_state_buffer = np.vstack((num_state_buffer, num_state))
-    action_idxs_buffer = np.vstack((action_idxs_buffer, action_idxs))
-    y_target_buffer = np.vstack((y_target_buffer, y_target))
+    vis_state_buffer.append(vis_state)
+    num_state_buffer.append(num_state)
+    action_idxs_buffer.append(action_idxs)
+    y_target_buffer.append(y_target)
 
 # def save_memory_buffer():
 #     np.save('memory_buffer.npy', memory_buffer)
@@ -45,6 +45,11 @@ def train_Misha(batch_size = 64, epochs = 3):
     global num_state_buffer
     global action_idxs_buffer
     global y_target_buffer
+    
+    vis_state_buffer = np.array(vis_state_buffer)
+    num_state_buffer = np.array(num_state_buffer)
+    action_idxs_buffer = np.array(action_idxs_buffer)
+    y_target_buffer = np.array(y_target_buffer)
     
     def loss(qs, actions, y_target):
         #Get the q-values of index actions as tensors
@@ -76,10 +81,10 @@ def train_Misha(batch_size = 64, epochs = 3):
             
         # losses = np.append(losses, losses_in_epoch)
             
-    vis_state_buffer = np.empty((0, 434, 576, 3), dtype='float32')  # Visual state
-    num_state_buffer = np.empty((0, 24), dtype='float32')           # Numerical state
-    action_idxs_buffer = np.empty((0, 2), dtype='int32')              # Action indices
-    y_target_buffer = np.empty((0, 1), dtype='float32')            # Target values
+    vis_state_buffer = []
+    num_state_buffer = []
+    action_idxs_buffer = []
+    y_target_buffer = []
     start_saving = time.time()
     Misha.save("Misha.keras")
     saving_time = time.time() - start_saving
