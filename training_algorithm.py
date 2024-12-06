@@ -45,13 +45,13 @@ def train_Misha(batch_size = 64, epochs = 3):
     global action_idxs_buffer
     global y_target_buffer
     
-    vis_state_buffer = np.array([vis_state_buffer])
-    num_state_buffer = np.array([num_state_buffer])
-    action_idxs_buffer = np.array([action_idxs_buffer])
-    y_target_buffer = np.array([y_target_buffer])
+    vis_state_buffer = np.array(vis_state_buffer)
+    num_state_buffer = np.array(num_state_buffer)
+    action_idxs_buffer = np.array(action_idxs_buffer)
+    y_target_buffer = np.array(y_target_buffer)
     print("SIZES:")
     for buffer in [vis_state_buffer, num_state_buffer, action_idxs_buffer, y_target_buffer]:
-        print(buffer.size, ", size: ", buffer.ndim)
+        print(buffer.shape, ", size: ", buffer.ndim)
     
     def loss(qs, actions, y_target):
         #Get the q-values of index actions as tensors
