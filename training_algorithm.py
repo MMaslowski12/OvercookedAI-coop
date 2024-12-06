@@ -21,16 +21,15 @@ def add_memory(vis_state, num_state, final_vis_state, final_num_state, action_id
     global action_idxs_buffer
     global y_target_buffer
     
-    y_target = reward + np.max(Misha((final_vis_state, final_num_state))) * gamma
+    y_target = reward[0] + np.max(Misha((final_vis_state, final_num_state))) * gamma
     
     action_idxs[1] += 5 #To account for the fact that indices for second's move are at [5: 10] of Misha's output
-    action_idxs = np.expand_dims(action_idxs, axis=0)
     
     #Add: state, indices of actions, a reward to the memory buffer
-    vis_state_buffer.append(vis_state)
-    num_state_buffer.append(num_state)
-    action_idxs_buffer.append(action_idxs)
-    y_target_buffer.append(y_target)
+    vis_state_buffer.extend(vis_state) # no [ because input already has a batch dimension
+    num_state_buffer.extend(num_state) # no [ because input already has a batch dimension
+    action_idxs_buffer.append([action_idxs]) #[ because action_idxs is just a list of two idxs
+    y_target_buffer.append([y_target]) #[ because y_target is just an integer
 
 # def save_memory_buffer():
 #     np.save('memory_buffer.npy', memory_buffer)
@@ -46,12 +45,13 @@ def train_Misha(batch_size = 64, epochs = 3):
     global action_idxs_buffer
     global y_target_buffer
     
-    print(len(vis_state_buffer))
-    vis_state_buffer = np.array(vis_state_buffer)[0]
-    num_state_buffer = np.array(num_state_buffer)[0]
-    action_idxs_buffer = np.array(action_idxs_buffer)[0]
-    y_target_buffer = np.array(y_target_buffer)[0]
-    print(vis_state_buffer.size)
+    vis_state_buffer = np.array(vis_state_buffer)
+    num_state_buffer = np.array(num_state_buffer)
+    action_idxs_buffer = np.array(action_idxs_buffer)
+    y_target_buffer = np.array(y_target_buffer)
+    print("SIZES:")
+    for buffer in [vis_state_buffer, num_state_buffer, action_idxs_buffer, y_target_buffer]:
+        print(buffer.size)
     
     def loss(qs, actions, y_target):
         #Get the q-values of index actions as tensors
@@ -69,7 +69,7 @@ def train_Misha(batch_size = 64, epochs = 3):
     
     for _ in range (epochs):
         dataset = tf.data.Dataset.from_tensor_slices((vis_state_buffer, num_state_buffer, action_idxs_buffer, y_target_buffer))
-        dataset = dataset.shuffle(buffer_size=len(vis_state_buffer)).batch(batch_size)
+        dataset = dataset.shuffle(buffer_size=len(vis_state_buffer)).batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
         losses_in_epoch = np.array([]) 
         for vis_batch, num_batch, action_idxs_batch, y_target_batch in dataset:
             with tf.GradientTape() as tape:
@@ -90,6 +90,7 @@ def train_Misha(batch_size = 64, epochs = 3):
     start_saving = time.time()
     Misha.save("Misha.keras")
     saving_time = time.time() - start_saving
+    print("Time saving: ", saving_time - start_saving)
     return (losses, saving_time)
 
 
