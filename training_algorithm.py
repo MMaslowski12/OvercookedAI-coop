@@ -46,7 +46,7 @@ def train_Misha(batch_size = 64, epochs = 3):
     global action_idxs_buffer
     global y_target_buffer
     
-    print(vis_state_buffer.size)
+    print(len(vis_state_buffer))
     vis_state_buffer = np.array(vis_state_buffer)[0]
     num_state_buffer = np.array(num_state_buffer)[0]
     action_idxs_buffer = np.array(action_idxs_buffer)[0]
