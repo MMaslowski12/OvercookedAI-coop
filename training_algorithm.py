@@ -28,8 +28,8 @@ def add_memory(vis_state, num_state, final_vis_state, final_num_state, action_id
     #Add: state, indices of actions, a reward to the memory buffer
     vis_state_buffer.extend(vis_state) # no [ because input already has a batch dimension
     num_state_buffer.extend(num_state) # no [ because input already has a batch dimension
-    action_idxs_buffer.append([action_idxs]) #[ because action_idxs is just a list of two idxs
-    y_target_buffer.append([y_target]) #[ because y_target is just an integer
+    action_idxs_buffer.extend([action_idxs]) #[ because action_idxs is just a list of two idxs
+    y_target_buffer.extend([y_target]) #[ because y_target is just an integer
 
 # def save_memory_buffer():
 #     np.save('memory_buffer.npy', memory_buffer)
@@ -45,13 +45,13 @@ def train_Misha(batch_size = 64, epochs = 3):
     global action_idxs_buffer
     global y_target_buffer
     
-    vis_state_buffer = np.array(vis_state_buffer)
-    num_state_buffer = np.array(num_state_buffer)
-    action_idxs_buffer = np.array(action_idxs_buffer)
-    y_target_buffer = np.array(y_target_buffer)
+    vis_state_buffer = np.array([vis_state_buffer])
+    num_state_buffer = np.array([num_state_buffer])
+    action_idxs_buffer = np.array([action_idxs_buffer])
+    y_target_buffer = np.array([y_target_buffer])
     print("SIZES:")
     for buffer in [vis_state_buffer, num_state_buffer, action_idxs_buffer, y_target_buffer]:
-        print(buffer.size)
+        print(buffer.size, ", size: ", buffer.ndim)
     
     def loss(qs, actions, y_target):
         #Get the q-values of index actions as tensors
