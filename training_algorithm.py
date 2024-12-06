@@ -59,7 +59,7 @@ def train_Misha(batch_size = 64, epochs = 3):
         
         #gather the qs of actions that were taken by the bot
         q_values_of_actions = tf.gather(qs, actions, batch_dims=1, axis=1)
-        q_values_of_actions = tf.cast(q_values_of_actions, dtype=tf.float64)
+        q_values_of_actions = tf.cast(q_values_of_actions, dtype=tf.float32)
         loss1 = tf.reduce_mean(tf.square(y_target - q_values_of_actions[:, 0:1]))
         loss2 = tf.reduce_mean(tf.square(y_target - q_values_of_actions[:, 1:2]))
         return (loss1+loss2)/2
