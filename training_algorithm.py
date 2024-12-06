@@ -21,7 +21,7 @@ def add_memory(vis_state, num_state, final_vis_state, final_num_state, action_id
     global action_idxs_buffer
     global y_target_buffer
     
-    y_target = reward[0] + np.max(Misha((final_vis_state, final_num_state))) * gamma
+    y_target = reward + np.max(Misha((final_vis_state, final_num_state))) * gamma
     
     action_idxs[1] += 5 #To account for the fact that indices for second's move are at [5: 10] of Misha's output
     
