@@ -64,8 +64,7 @@ def train_Misha(batch_size = 64, epochs = 3):
         loss2 = tf.reduce_mean(tf.square(y_target - q_values_of_actions[:, 1:2]))
         return (loss1+loss2)/2
     
-    losses = np.array([])
-    
+    losses = []
     
     for _ in range (epochs):
         dataset = tf.data.Dataset.from_tensor_slices((vis_state_buffer, num_state_buffer, action_idxs_buffer, y_target_buffer))
@@ -81,7 +80,7 @@ def train_Misha(batch_size = 64, epochs = 3):
             optimizer.apply_gradients(zip(gradients, Misha.trainable_variables))
             losses_in_epoch = np.append(losses_in_epoch, loss_value)
             
-        # losses = np.append(losses, losses_in_epoch)
+        losses.append(losses_in_epoch)
             
     vis_state_buffer = []
     num_state_buffer = []
@@ -90,7 +89,8 @@ def train_Misha(batch_size = 64, epochs = 3):
     start_saving = time.time()
     Misha.save("Misha.keras")
     saving_time = time.time() - start_saving
-    print("Time saving: ", saving_time - start_saving)
+    print("Time saving: ", saving_time)
+    print("Average loss: ", sum(losses)/len(losses))
     return (losses, saving_time)
 
 
