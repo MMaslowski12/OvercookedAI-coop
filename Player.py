@@ -225,12 +225,12 @@ class Player(Object):
             
             else:
                 if not hand.chopped:
-                    numerical_data[1] = 4
+                    numerical_data[4] = 1
                 
                 elif not hand.fried:
-                    numerical_data[2] = 5
+                    numerical_data[5] = 1
                 
-                else: numerical_data[3] = 6
+                else: numerical_data[6] = 1
                        
         return numerical_data
         

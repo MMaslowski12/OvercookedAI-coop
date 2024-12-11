@@ -87,5 +87,5 @@ for i in range (ROWS):
             obj_sprite.add(object)
             
 
-player1_start = coords2px(fish_x, fish_y + 1)
-player2_start = coords2px(potato_x - 1, potato_y)
+player1_start = coords2px(fish_x, fish_y + 1.5)
+player2_start = coords2px(potato_x - 1.5, potato_y)
