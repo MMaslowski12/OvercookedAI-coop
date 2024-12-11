@@ -54,11 +54,28 @@ def train_Misha(batch_size = 64, epochs = 3):
         
         #gather the qs of actions that were taken by the bot
         q_values_of_actions = tf.gather(qs, actions, batch_dims=1, axis=1)
-        q_values_of_actions = tf.cast(q_values_of_actions, dtype=tf.float32)
-        loss1 = tf.reduce_mean(tf.square(y_target - q_values_of_actions[:, 0:1]))
-        loss2 = tf.reduce_mean(tf.square(y_target - q_values_of_actions[:, 1:2]))
-        return (loss1+loss2)/2
+        # q_values_of_actions = tf.cast(q_values_of_actions, dtype=tf.float32)
+        #Average the q_values across the two actions (average of the Q-value)
+        #Like this and not losses separately because there is no point for q-value of either to predict the entire q-value - they are inherently entangled, so the loss should be entangled, too
+        avg_q_values = tf.reduce_mean(q_values_of_actions, axis = 1, keepdims=True)
+        
+        loss = tf.reduce_mean(tf.square(y_target - avg_q_values))
+        return loss
     
+    
+    def loss(qs, actions, y_target):
+        # Extract the Q-values corresponding to the chosen actions
+        q_values_of_actions = tf.gather(qs, actions, batch_dims=1, axis=1)
+        q_values_of_actions = tf.cast(q_values_of_actions, dtype=tf.float32)
+
+        # Take the mean across all the Q-value predictions for each sample
+        avg_q_values = tf.reduce_mean(q_values_of_actions, axis=1, keepdims=True)
+
+        # Compute a single MSE using the averaged Q-values
+        loss = tf.reduce_mean(tf.square(y_target - avg_q_values))
+
+        return loss
+
     losses = []
     
     for _ in range (epochs):

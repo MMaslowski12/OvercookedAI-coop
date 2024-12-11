@@ -143,6 +143,7 @@ class Player(Object):
             if execute:
                 table.resource.add_ingredient(self.hands)
                 self.hands = None
+                
             return True
 
         return False
