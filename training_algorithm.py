@@ -105,7 +105,7 @@ def train_Misha(batch_size = 64, epochs = 3):
     start_saving = time.time()
     Misha.save("Misha.keras")
     saving_time = time.time() - start_saving
-    print("Average loss: ", sum(losses)/len(losses))
+    # print("Average loss: ", sum(losses)/len(losses))
     return (losses, saving_time)
 
 
