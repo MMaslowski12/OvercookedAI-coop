@@ -18,9 +18,8 @@ def freeze():
 
 def activate_venv(venv_name="venv"):
     if not os.path.exists(venv_name):
-        result = subprocess.check_call(
-        [sys.executable, "-c", "print('Hello, World!')"])
-        subprocess.check_call(f"{sys.executable} -m venv {venv_name}", shell=True)
+        subprocess.check_call([sys.executable, "-c", "print('Hello, World!')"])
+        subprocess.check_call([sys.executable, "-m", "venv", venv_name])
         print("Venv created")
         
     venv_python = os.path.join(venv_name, "bin", "python")
