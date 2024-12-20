@@ -10,6 +10,7 @@ def install_requirements(requirements_file="requirements.txt"):
         print(f"Installing dependencies from '{requirements_file}'...")
         subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", requirements_file])
         print("Dependencies installed successfully.")
+        
     except subprocess.CalledProcessError as e:
         print(f"Failed to install dependencies. Error: {e}")
         
@@ -17,12 +18,14 @@ def freeze():
     subprocess.check_call(f"{sys.executable} -m pip freeze > requirements.txt", shell=True)
 
 def activate_venv(venv_name="venv"):
+    print(sys.executable)
     if not os.path.exists(venv_name):
         subprocess.check_call([sys.executable, "-c", "print('Hello, World!')"])
         subprocess.check_call([sys.executable, "-m", "venv", venv_name])
         print("Venv created")
         
     venv_python = os.path.join(venv_name, "bin", "python")
+    subprocess.check_call([venv_python, "-c", "print('Hello, World!')"])
     return venv_python
     
 def get_requirements(venv_name="venv", requirements_file="requirements.txt"):
