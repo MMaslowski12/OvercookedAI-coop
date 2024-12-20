@@ -21,6 +21,8 @@ def activate_venv(venv_name="venv"):
     print(sys.executable)
     if not os.path.exists(venv_name):
         subprocess.check_call([sys.executable, "-c", "print('Hello, World!')"])
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "virtualenv"])
+        print("installed venv")
         subprocess.check_call([sys.executable, "-m", "venv", venv_name])
         print("Venv created")
         
