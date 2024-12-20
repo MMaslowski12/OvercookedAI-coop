@@ -18,8 +18,9 @@ def freeze():
 
 def activate_venv(venv_name="venv"):
     if not os.path.exists(venv_name):
-        subprocess.check_call([sys.executable, "-m", "venv", venv_name])
+        subprocess.check_call(f"{sys.executable} -m venv {venv_name}", shell=True)
         print("Venv created")
+        
     venv_python = os.path.join(venv_name, "bin", "python")
     return venv_python
     
@@ -29,7 +30,7 @@ def get_requirements(venv_name="venv", requirements_file="requirements.txt"):
     subprocess.check_call([venv_python, "-m", "pip", "install", "-r", requirements_file])
 
 def setup_venv(venv_python):
-    subprocess.check_call([venv_python, "-m", "pip", "install", "--upgrade", "pip"])
+    # subprocess.check_call([venv_python, "-m", "pip", "install", "--upgrade", "pip"])
     packages = [
         "setuptools",
         "numpy",
