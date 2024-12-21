@@ -60,6 +60,7 @@ def setup_venv(venv_python):
             print(f"Installing {package}...")
             install(package)
             print(f"Successfully installed {package}!")
+            
         except subprocess.CalledProcessError as e:
             print(f"Failed to install {package}. Error: {e}")
 
