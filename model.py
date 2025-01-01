@@ -3,7 +3,7 @@ from tensorflow.keras.models import Model
 import tensorflow as tf
 print(tf.__version__)
 
-if __name__ == "__main__":
+def initialize_model():
     image_input = Input(shape=(434, 576, 3))
     image_resized = Resizing(108, 144)(image_input) 
 
@@ -23,9 +23,7 @@ if __name__ == "__main__":
     x = Dense(32, activation='relu')(combined)
     output = Dense(10, activation='linear')(x)
     model = Model(inputs=[image_input, additional_input], outputs=output)
-    model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
+    model.compile()
 
     model.summary()
-    model.save("Misha.keras")
-
 

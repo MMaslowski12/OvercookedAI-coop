@@ -1,18 +1,6 @@
 import pygame
-SIZE = 32
-ROWS = 12
-COLS = 18
-screen_width = 800
-screen_height = 600
-START_X, START_Y = (int(screen_width // 2 - 1/2*SIZE*COLS), int(screen_height // 2 - 1/2*SIZE*ROWS))
-END_X, END_Y = (START_X + SIZE*COLS, START_Y + SIZE*ROWS)
-screen = pygame.display.set_mode((screen_width, screen_height))
-
-
 import os
 os.chdir('Graphics')
-
-
 
 FLOOR_GRAPHIC = pygame.image.load('Floor.png')
 WALL_GRAPHIC = pygame.image.load('Wall.png')

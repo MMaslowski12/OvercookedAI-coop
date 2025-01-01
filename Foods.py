@@ -1,8 +1,6 @@
 import pygame
-import numpy as np
-from constants import START_X, START_Y, END_X, WHITE
+from constants import WHITE
 import pygame
-pygame.init()
 
 class ResourceGroup(pygame.sprite.Group):
     #Overriding draw because of a specific nature of resources being drawn
@@ -30,6 +28,7 @@ class Resource(pygame.sprite.Sprite):
         self.position = None
         self.image = None
         self.rect = None
+        self.progress = 0
         super().__init__()
         Resources.add(self)
         
@@ -94,6 +93,7 @@ class Resource(pygame.sprite.Sprite):
 from constants import FISH_GRAPHICS, POTATO_GRAPHICS, PLATE_GRAPHICS
 class Fish(Resource):
     def __init__(self, place):
+        print("Fish initialized")
         super().__init__(FISH_GRAPHICS, place)
 
 class Potato(Resource):
@@ -174,7 +174,9 @@ class MenuClass():
             
         return False
     
-    def draw(self, screen):
+    def draw(self, screen, corner_coords):
+        START_X, START_Y, END_X, _ = corner_coords
+        
         #Draw a strip:
         strip_left = START_X
         strip_top = START_Y - self.height
@@ -208,25 +210,22 @@ class MenuClass():
             screen.blit(score_surface, (text_x, score_text_y))
             
             
-        
-    
     def get_state(self):
         '''
         Returns the state of the menu. 10 binary values. 2*ith value corresponds to whether the ith dish contains fish, and the 2*i + 1th value corresponds to whether the ith dish contains potatoes 
         '''
         
-        state = np.zeros((5, 2)) 
+        state = [0]*10
         
         for i in range(len(self.queue)):  
             dish = self.queue[i]
             
             if dish.name == "Fish and Chips":
-                state[i, 0] = 1
-                state[i, 1] = 1  #Both fish and potatoes
+                state[2*i] = 1
+                state[2*i+1] = 1  #Both fish and potatoes
                 
             else:
-                state[i, 0] = 1  #Fish only
+                state[2*i, 0] = 1  #Fish only
 
-        return state.flatten()  #Flatten the array from 2D to 1D
+        return state  #Flatten the array from 2D to 1D
     
-Menu = MenuClass()

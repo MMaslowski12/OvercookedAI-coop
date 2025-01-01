@@ -1,91 +1,180 @@
-from Objects import ResourceSource, CBoard, Fryer, CBelt, TrashCan, Floor, Floors, Wall, Walls, CounterTop, CounterTops
-from constants import COLS, ROWS, SIZE, START_X, START_Y, END_X, END_Y, FISH_CRATE_ICON, POTATO_CRATE_ICON, PLATE_CRATE, CB_R_ICON, FRYER_R_ICON
-from Foods import Fish, Potato, Plate
+from Foods import Fish, Potato, Plate, MenuClass
+import numpy as np
+import pygame
 
-WALL_COLUMN = 11
-WALL_LENGTH = 8
-floor_plan_matrix = [([0]*COLS) for _ in range(ROWS)]
+class Board:
+    def __init__(self, map_generator):
+        self.screen = pygame.display.set_mode((800, 600))
+        self.Menu = MenuClass()
+        self.StaticObjects = pygame.sprite.Group()
+        self.Interactables = pygame.sprite.Group()
+        self.NonPassables = pygame.sprite.Group()
+        self.Players = pygame.sprite.Group()
+        self.is_game_over = False
+        #Get Interactables, NonPassables and Players, too
+        
+        floor_plan_matrix, idx2obj, coords2px, self.corner_coordinates, players = map_generator()
+        for i in range (len(floor_plan_matrix)):
+            for j in range (len(floor_plan_matrix[0])):     
+                obj_class = idx2obj(floor_plan_matrix[i][j])     
+                x, y = coords2px(j, i)
+                object = obj_class(position=[x, y], board=self) 
+                self.StaticObjects.add(object)
+                if (object.is_nonpassable()):
+                    self.NonPassables.add(object)
+                
+                if (object.is_interactable()):
+                    self.Interactables.add(object)
+        
+        for player_setup in players:
+            player_coords, player_class = player_setup
+            self.Players.add(player_class(coords2px(player_coords[1], player_coords[0]), self))
+                    
+        
+    def draw(self):
+        self.screen.fill((255, 255, 255)) 
+        self.StaticObjects.draw(self.screen)
+        self.Players.draw(self.screen)
+        self.Menu.draw(self.screen, self.corner_coordinates)
+        if self.is_game_over:
+            self._draw_game_over()
+            #Game finished; display a large "GAME OVER" sign over a frozen frame
 
-def coords2px(x, y):
-    return START_X + SIZE/2 + x*SIZE, START_Y+SIZE/2 + y*SIZE
-
-#0 = FLOOR, 1 = WALL, 2 = COUNTERTOP, 3 = SPECIAL ELEMENT
-for i in range (COLS):
-    floor_plan_matrix[0][i] = 1
-    if(i >  0 and i < COLS-1):
-        floor_plan_matrix[1][i] = 2
-    floor_plan_matrix[ROWS-1][i] = 1
-
-for i in range (ROWS):
-    floor_plan_matrix[i][0] = 1
-    floor_plan_matrix[i][COLS-1] = 1
-    if(i > 0 and i < ROWS-1):
-        floor_plan_matrix[i][COLS-2] = 2
-
-
-for i in range (8):
-    floor_plan_matrix[i][WALL_COLUMN] = 1
     
-fish_x, fish_y = (8, 1)
-floor_plan_matrix[fish_y][fish_x] = 3
-FishCrate = ResourceSource(coords2px(fish_x, fish_y), Fish, FISH_CRATE_ICON)
-
-potato_x, potato_y = (COLS-2, 5)
-floor_plan_matrix[potato_y][potato_x] = 3
-PotatoCrate = ResourceSource(coords2px(potato_x, potato_y), Potato, POTATO_CRATE_ICON)
-
-plate_x, plate_y = (WALL_COLUMN+1, 1)
-floor_plan_matrix[plate_y][plate_x] = 3
-PotatoCrate = ResourceSource(coords2px(plate_x, plate_y), Plate, PLATE_CRATE)
-
-
-CB1_x, CB1_y = fish_x-1, fish_y
-floor_plan_matrix[CB1_y][CB1_x] = 3
-CBoard1 = CBoard(coords2px(CB1_x, CB1_y))
-
-
-CB2_x, CB2_y = potato_x, potato_y+1
-floor_plan_matrix[CB2_y][CB2_x] = 3
-CBoard2 = CBoard(coords2px(CB2_x, CB2_y), None, CB_R_ICON)
-
-
-Fryer1_x, Fryer1_y = CB1_x-1, CB1_y
-floor_plan_matrix[Fryer1_y][Fryer1_x] = 3
-Fryer1 = Fryer(coords2px(Fryer1_x, Fryer1_y))
-
-Fryer2_x, Fryer2_y = CB2_x, CB2_y+1
-floor_plan_matrix[Fryer2_y][Fryer2_x] = 3
-Fryer2 = Fryer(coords2px(Fryer2_x, Fryer2_y), None, FRYER_R_ICON)
-
-CBelt1_x, CBelt1_y = plate_x+1, plate_y
-floor_plan_matrix[CBelt1_y][CBelt1_x] = 3
-CBelt1 = CBelt(coords2px(CBelt1_x, CBelt1_y))
-
-CBelt2_x, CBelt2_y = CBelt1_x+1, CBelt1_y
-floor_plan_matrix[CBelt2_y][CBelt2_x] = 3
-CBelt2 = CBelt(coords2px(CBelt2_x, CBelt2_y))
-
-CBelt3_x, CBelt3_y = CBelt1_x, CBelt1_y-1
-floor_plan_matrix[CBelt3_y][CBelt3_x] = 3
-CBelt3 = CBelt(coords2px(CBelt3_x, CBelt3_y))
-
-CBelt4_x, CBelt4_y = CBelt1_x+1, CBelt1_y-1
-floor_plan_matrix[CBelt4_y][CBelt4_x] = 3
-CBelt4 = CBelt(coords2px(CBelt4_x, CBelt4_y))
-
-
-Trash_x, Trash_y = CBelt2_x+1, CBelt2_y
-floor_plan_matrix[Trash_y][Trash_x] = 3
-Trash = TrashCan(coords2px(Trash_x, Trash_y))
-
-obj_types = [[Floor, Floors], [Wall, Walls], [CounterTop, CounterTops]]
-for i in range (ROWS):
-    for j in range (COLS):
-        if(floor_plan_matrix[i][j] < 3):
-            obj_class, obj_sprite = obj_types[floor_plan_matrix[i][j]]
-            object = obj_class([START_X+SIZE/2 + j*SIZE, START_Y+SIZE/2 + i*SIZE])
-            obj_sprite.add(object)
+    def _draw_game_over(self):
+        START_X, START_Y, END_X, END_Y = self.corner_coordinates
+        
+        font = pygame.font.SysFont("comicsansms", 100)
+        game_over_surface = font.render("GAME OVER", True, (255, 0, 0))
+        game_over_rect = game_over_surface.get_rect(center=((START_X+END_X)//2, (START_Y + END_Y)//2))
+        
+        score_text = f"Final Score: {self.Menu.game_score}"
+        score_surface = font.render(score_text, True, (0, 0, 0))
+        score_rect = score_surface.get_rect(center=((START_X + END_X) // 2, (START_Y + END_Y) // 2 + 100))
+        
+        self.screen.blit(game_over_surface, game_over_rect)
+        self.screen.blit(score_surface, score_rect)
+    
+    def game_over(self):
+        #SET GAME_OVER AS TRUE, ADD DRAWING GAME_OVER TO SELF.DRAW()
+        self.is_game_over = True
+    
+    def update(self, keys):
+        if not self.is_game_over:
+            self.Interactables.update()
+            self.Players.update(keys=keys, board=self) 
+            self.draw()
+        
+        else:
+            self._draw_game_over()
+    
+    def _get_visual_data(self):
+        visual_data = pygame.surfarray.array3d(self.screen)
+        visual_data = np.transpose(visual_data, (1, 0, 2)) #Change from width, height, color channel to height, width, color channel
+        start_x, start_y, end_x, end_y = self.corner_coordinates
+        
+        visual_data = visual_data[start_y - self.Menu.height: end_y, start_x:end_x]
+        visual_data = visual_data / 255. #Normalize pixels from 0 to 1 for easier training
+        visual_data = np.expand_dims(visual_data, axis=0)
+        return visual_data.tolist()
+    
+    def _get_numerical_data(self):
+        numerical_data = self.Menu.get_state()
+        for Player in self.Players:
+            numerical_data.extend(Player.get_state())
             
+        return [numerical_data] #Add a batch dimension
 
-player1_start = coords2px(fish_x, fish_y + 1)
-player2_start = coords2px(potato_x - 1, potato_y)
+    
+    def get_state(self):
+        '''
+        Returns the list of:
+        - visual_data - normalized pixel values of the screen
+        - numerical_data, containing in respective order:
+            - the state of the Menu (see: Menu.get_state())
+            - the state of Player 1's and Player 2's hands (see: Player.get_state())
+        
+        '''
+        
+        visual_data = self._get_visual_data()
+        numerical_data = self._get_numerical_data()
+        
+        return [visual_data, numerical_data]
+    
+    
+    def _get_ingredient_rewards(self, ingredient, raw_coeff, prep_coeff):
+        reward = raw_coeff
+        if ingredient.chopped:
+            reward += prep_coeff
+        
+        if ingredient.fried:
+            reward += prep_coeff
+            
+        if (ingredient.progress != 0):
+            reward += prep_coeff * self.progress/100
+        
+        return reward
+        
+
+    def get_rewards(self):
+        '''
+        Computes the total amount of rewards for the current game state. 
+        Rewards = game score * 10
+        Additionally:
+        Raw food needed to finish the menu is worth 50 points, 
+        Cut food on the menu - 150 points 
+        Fried food on the menu - 250 points
+        Plate - 500 points
+        '''
+        
+        raw_coeff = 50
+        prep_coeff = 100
+        plate_coeff = 500
+        
+        rewards = self.Menu.game_score*10
+        
+        fish_points = []
+        potato_points = []
+        plate_points = []
+        
+        foods = []
+        for Interactable in self.Interactables:
+            if(Interactable.resource != None):
+                foods.append(Interactable.resource) 
+        
+        for Player in self.Players:
+            if(Player.hand != None):
+                foods.append(Player.hand)
+        
+        for food in foods:
+            if isinstance(food, Plate):
+                plate_points.append(plate_coeff)
+                for ingredient in food.ingredients:
+                    reward = self._get_ingredient_rewards(ingredient, raw_coeff, prep_coeff)
+                    if isinstance(ingredient, Fish):
+                        fish_points.append(reward)
+                    
+                    if isinstance(ingredient, Potato):
+                        potato_points.append(reward)
+            
+            else:
+                reward = self._get_ingredient_rewards(food, raw_coeff, prep_coeff)
+                if isinstance(ingredient, Fish):
+                    fish_points.append(reward)
+                
+                if isinstance(ingredient, Potato):
+                    potato_points.append(reward)
+                    
+        fish_on_menu = sum([dish.ingredients_dict["Fish"] for dish in self.Menu.queue])
+        potato_on_menu = sum([dish.ingredients_dict["Potato"] for dish in self.Menu.queue])
+        plate_on_menu = len(self.Menu.queue)
+        
+        fish_points.sort(reverse = True)
+        potato_points.sort(reverse = True)
+        plate_points.sort(reverse = True)
+            
+        rewards += sum(fish_points[:fish_on_menu])
+        rewards += sum(potato_points[:potato_on_menu])
+        rewards += sum(plate_points[:plate_on_menu])
+        
+        return float(rewards)
