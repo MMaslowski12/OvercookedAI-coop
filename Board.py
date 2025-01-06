@@ -1,6 +1,8 @@
-from Foods import Fish, Potato, Plate, MenuClass
+from Foods import Fish, Potato, Plate, MenuClass, ResourceGroup
+from Player import Player1, Player2
 import numpy as np
 import pygame
+import tensorflow as tf
 
 class Board:
     def __init__(self, map_generator):
@@ -10,10 +12,11 @@ class Board:
         self.Interactables = pygame.sprite.Group()
         self.NonPassables = pygame.sprite.Group()
         self.Players = pygame.sprite.Group()
+        self.Resources = ResourceGroup()
         self.is_game_over = False
         #Get Interactables, NonPassables and Players, too
         
-        floor_plan_matrix, idx2obj, coords2px, self.corner_coordinates, players = map_generator()
+        floor_plan_matrix, idx2obj, coords2px, self.corner_coordinates, player1_coords, player2_coords = map_generator()
         for i in range (len(floor_plan_matrix)):
             for j in range (len(floor_plan_matrix[0])):     
                 obj_class = idx2obj(floor_plan_matrix[i][j])     
@@ -26,16 +29,21 @@ class Board:
                 if (object.is_interactable()):
                     self.Interactables.add(object)
         
-        for player_setup in players:
-            player_coords, player_class = player_setup
-            self.Players.add(player_class(coords2px(player_coords[1], player_coords[0]), self))
-                    
+        self.Player1 = Player1(coords2px(player1_coords[1], player1_coords[0]), self)
+        self.Players.add(self.Player1)
+        self.Player2 = Player2(coords2px(player2_coords[1], player2_coords[0]), self)
+        self.Players.add(self.Player2)
+
         
     def draw(self):
         self.screen.fill((255, 255, 255)) 
         self.StaticObjects.draw(self.screen)
         self.Players.draw(self.screen)
         self.Menu.draw(self.screen, self.corner_coordinates)
+        self.Resources.draw(self.screen)
+        for interactable in self.Interactables:
+            interactable.draw_progress_bar(self.screen)
+        
         if self.is_game_over:
             self._draw_game_over()
             #Game finished; display a large "GAME OVER" sign over a frozen frame
@@ -63,6 +71,7 @@ class Board:
         if not self.is_game_over:
             self.Interactables.update()
             self.Players.update(keys=keys, board=self) 
+            self.Menu.update()
             self.draw()
         
         else:
@@ -76,14 +85,18 @@ class Board:
         visual_data = visual_data[start_y - self.Menu.height: end_y, start_x:end_x]
         visual_data = visual_data / 255. #Normalize pixels from 0 to 1 for easier training
         visual_data = np.expand_dims(visual_data, axis=0)
-        return visual_data.tolist()
+        
+        visual_data_tensor = tf.convert_to_tensor(visual_data, dtype=tf.float32)
+        
+        new_size = (108, 144)
+        return tf.image.resize(visual_data_tensor, new_size, method='bilinear')
     
     def _get_numerical_data(self):
         numerical_data = self.Menu.get_state()
         for Player in self.Players:
             numerical_data.extend(Player.get_state())
             
-        return [numerical_data] #Add a batch dimension
+        return tf.convert_to_tensor([numerical_data]) #Add a batch dimension
 
     
     def get_state(self):
@@ -111,7 +124,7 @@ class Board:
             reward += prep_coeff
             
         if (ingredient.progress != 0):
-            reward += prep_coeff * self.progress/100
+            reward += prep_coeff * ingredient.progress/100
         
         return reward
         
@@ -143,13 +156,13 @@ class Board:
                 foods.append(Interactable.resource) 
         
         for Player in self.Players:
-            if(Player.hand != None):
-                foods.append(Player.hand)
+            if(Player.hands != None):
+                foods.append(Player.hands)
         
         for food in foods:
             if isinstance(food, Plate):
                 plate_points.append(plate_coeff)
-                for ingredient in food.ingredients:
+                for ingredient in food.dish:
                     reward = self._get_ingredient_rewards(ingredient, raw_coeff, prep_coeff)
                     if isinstance(ingredient, Fish):
                         fish_points.append(reward)
@@ -159,10 +172,10 @@ class Board:
             
             else:
                 reward = self._get_ingredient_rewards(food, raw_coeff, prep_coeff)
-                if isinstance(ingredient, Fish):
+                if isinstance(food, Fish):
                     fish_points.append(reward)
                 
-                if isinstance(ingredient, Potato):
+                if isinstance(food, Potato):
                     potato_points.append(reward)
                     
         fish_on_menu = sum([dish.ingredients_dict["Fish"] for dish in self.Menu.queue])

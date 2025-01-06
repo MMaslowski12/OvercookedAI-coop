@@ -4,11 +4,9 @@ import tensorflow as tf
 print(tf.__version__)
 
 def initialize_model():
-    image_input = Input(shape=(434, 576, 3))
-    image_resized = Resizing(108, 144)(image_input) 
-
+    image_input = Input(shape=(108, 144, 3))
     #This defins the network through which the visual input (the screenshot of the board) will go through before joining other input\\
-    x = Conv2D(8, (3, 3), activation='relu')(image_resized)
+    x = Conv2D(8, (3, 3), activation='relu')(image_input)
     x = MaxPooling2D(3, 3)(x)
     x = Conv2D(16, (3, 3), activation='relu')(x)
     x = MaxPooling2D((3, 3))(x)
@@ -26,4 +24,6 @@ def initialize_model():
     model.compile()
 
     model.summary()
+    # model.save('Misha.keras')
 
+# initialize_model()

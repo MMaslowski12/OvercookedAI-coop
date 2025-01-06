@@ -10,7 +10,7 @@ def generate_map():
     screen_height = 600
     
     START_X, START_Y = (int(screen_width // 2 - 1/2*SIZE*COLS), int(screen_height // 2 - 1/2*SIZE*ROWS))
-    END_X, END_Y = START_X + SIZE*COLS, START_Y + SIZE*COLS
+    END_X, END_Y = START_X + SIZE*COLS, START_Y + SIZE*ROWS
 
     '''
     0: Floor
@@ -117,15 +117,10 @@ def generate_map():
     def coords2px(x, y):
         return START_X + SIZE/2 + x*SIZE, START_Y+SIZE/2 + y*SIZE
     
-    player1_coords = (2, 7)
-    player1_setup = (player1_coords, Player1)
+    player1_coords = (2.2, 7) #0.2 offset so that it doesnt touch the wall
+    player2_coords = (5, 14.8)
     
-    player2_coords = (5, 15)
-    player2_setup = (player2_coords, Player2)
-    
-    players = [player1_setup, player2_setup]
-    
-    return floor_plan_matrix, idx2obj, coords2px, (START_X, START_Y, END_X, END_Y), players
+    return floor_plan_matrix, idx2obj, coords2px, (START_X, START_Y, END_X, END_Y), player1_coords, player2_coords
 
     #Finish dealing with Player actions and interaction methods. Important: double-check placing down on CBoards and Fryers, especially the knife removal thing?
     #Fix up everything with unresolved problems

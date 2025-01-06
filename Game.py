@@ -10,6 +10,7 @@ class Game:
         self.misha_playing = misha_playing
         self.tick_length = tick_length
         self.clock = pygame.time.Clock()
+        self.action_rate = 5
         
         if misha_playing:
             self.Agent = agent 
@@ -32,8 +33,8 @@ class Game:
         keys = [key for key in dir(pygame) if key.startswith('K_')]
         actions = {getattr(pygame, key): False for key in keys}
         
-        actions[list(self.Board.player1_controls.values())[p1_idx]] = True
-        actions[list(self.Board.player2_controls.values())[p2_idx]] = True
+        actions[list(self.Board.Player1.controls.values())[p1_idx]] = True
+        actions[list(self.Board.Player2.controls.values())[p2_idx]] = True
         
         return [p1_idx, p2_idx], actions
             
@@ -44,9 +45,9 @@ class Game:
             qs = self.Agent.get_qs(state, random_exploration=self.Agent.learning)    
                 
             action_idxs, actions = self.qs2actions(qs)
-            update_buffer = self.Agent.learning and (self.tick + 1 < self.tick_length) #The last action has no consequences
+            update_buffer = self.Agent.learning and (self.tick + self.action_rate + 1 < self.tick_length) #The last action has no consequences. 
             if (update_buffer):
-                self.Agent.add_actions_to_memory(state, action_idxs)
+                self.Agent.remember_actions(state, action_idxs)
         
         else:
             actions = pygame.key.get_pressed()
@@ -56,9 +57,9 @@ class Game:
     def _get_consequences(self):
         rewards = self.Board.get_rewards()
         if(self.tick != 0): 
-            self.Agent.add_consequences_to_memory(self.Board.get_state(), rewards - self.former_rewards)
+            self.Agent.add_experience_to_memory(self.Board.get_state(), rewards - self.former_rewards)
         
-        self.former_rewards = self.rewards
+        self.former_rewards = rewards
         
     
     def run(self):
@@ -74,7 +75,7 @@ class Game:
                 pygame.display.flip()
                 self.clock.tick(60)   
                 
-            if (self.tick % 5 == 0):
+            if (self.tick % self.action_rate == 0):
                 #The Consequences
                 if self.misha_playing and self.Agent.learning:
                     self._get_consequences()

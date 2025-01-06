@@ -1,7 +1,7 @@
 import pygame
 import os
 os.chdir('Graphics')
-
+print(os.getcwd())
 FLOOR_GRAPHIC = pygame.image.load('Floor.png')
 WALL_GRAPHIC = pygame.image.load('Wall.png')
 PLAYER1_GRAPHIC = pygame.image.load('player1.png')

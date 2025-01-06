@@ -1,18 +1,15 @@
 import pygame
 from constants import WHITE
 import pygame
+import math
 
 class ResourceGroup(pygame.sprite.Group):
     #Overriding draw because of a specific nature of resources being drawn
     def draw(self, surface):
         for sprite in self.sprites():
             sprite.determine_position()
-        super().draw(surface)
+            surface.blit(sprite.image, sprite.rect)
 
-
-import math
-
-Resources = ResourceGroup()
 class Resource(pygame.sprite.Sprite):
     def __init__(self, graphics, place):
         self.icon = graphics["icon"]
@@ -29,12 +26,9 @@ class Resource(pygame.sprite.Sprite):
         self.image = None
         self.rect = None
         self.progress = 0
-        super().__init__()
-        Resources.add(self)
-        
-        
+        super().__init__()        
+    
     def determine_position(self):
-        place = self.place.__class__.__name__ #Going around the circular import problem.
         #Displaying subicons of ingredients in a dish
         if(isinstance(self, Plate) and len(self.dish) > 0):
             y_gap = 20
@@ -56,7 +50,7 @@ class Resource(pygame.sprite.Sprite):
                 
                 ingredient.rect = ingredient.image.get_rect(center = (x, y))
         
-        if(place == "Player"):
+        if getattr(self.place, "is_player", lambda: False)():
             player = self.place
             self.position = (player.rect.center[0] + 20, player.rect.center[1] - 20)
             self.image = self.icon
@@ -68,7 +62,7 @@ class Resource(pygame.sprite.Sprite):
             
             self.rect = self.image.get_rect(center = self.position)
             
-        if(place == "CounterTop" or place == "CBoard" or place == "Fryer"):
+        if getattr(self.place, "is_interactable", lambda: False)():
             table = self.place
             self.position = table.rect.center
             self.image = self.plain_graphic
@@ -80,9 +74,7 @@ class Resource(pygame.sprite.Sprite):
                 
             self.rect = self.image.get_rect(center = self.position)
         
-        elif(place == "Plate"):
-            pass #Its position is determined when the position of the place is determined - see below:
-        
+        #If a place is a plate, do nothing
 
     def chop(self):
         self.chopped = True
@@ -93,7 +85,6 @@ class Resource(pygame.sprite.Sprite):
 from constants import FISH_GRAPHICS, POTATO_GRAPHICS, PLATE_GRAPHICS
 class Fish(Resource):
     def __init__(self, place):
-        print("Fish initialized")
         super().__init__(FISH_GRAPHICS, place)
 
 class Potato(Resource):
@@ -225,7 +216,7 @@ class MenuClass():
                 state[2*i+1] = 1  #Both fish and potatoes
                 
             else:
-                state[2*i, 0] = 1  #Fish only
+                state[2*i] = 1  #Fish only
 
         return state  #Flatten the array from 2D to 1D
     

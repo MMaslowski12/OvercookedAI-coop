@@ -36,6 +36,7 @@ class NonPassable(Object):
         
 class Interactable(Object):
     def __init__(self, position, graphic, board):
+        self.resource = None
         super().__init__(position, graphic=graphic, board=board)
     
     def is_interactable(self):
@@ -46,18 +47,16 @@ class Interactable(Object):
         for method_name in dir(self):
             if hasattr(self, method_name):
                 method = getattr(self, method_name)
-                if(method_name == "give_resource"):
-                    print("FOR GIVE_RESOURCE: ", callable(method), getattr(method, "interaction_method", False))
-                
                 if callable(method) and getattr(method, "interaction_method", False):
-                    print("xd2")
                     interactions.append(method)
                     
         return interactions
     
     def update(*args, **kwargs):
-        pass 
-                
+        pass         
+    
+    def draw_progress_bar(self, screen):
+        pass
 
 class Floor(Object):
     def __init__(self, position, board):
@@ -80,10 +79,11 @@ class ResourceSource(NonPassable, Interactable): #Add it to the Board whenever i
     # take the resource = player now has resource
     @interaction_method
     def give_resource(self, player, execute = True):
-        print("Give resource")
         if (player.hands == None):
             if (execute):
-                player.hands = self.food(player)
+                new_resource = self.food(player)
+                self.board.Resources.add(new_resource)
+                player.hands = new_resource
                 
             return True
         
@@ -106,7 +106,6 @@ class CounterTop(NonPassable, Interactable):
     def __init__(self, position, board, graphic=COUNTERTOP_ICON):
         super().__init__(position, graphic=graphic, board=board)
         # CounterTops.add(self)
-        self.resource = None
     
     @interaction_method
     def put_resource(self, player, execute = True):        
@@ -127,7 +126,8 @@ class CounterTop(NonPassable, Interactable):
         else:
             plate_conditions = isinstance(self.resource, Plate) and (not isinstance(player.hands, Plate)) and player.hands.fried
             if plate_conditions and execute:
-                self.resource.add_ingredient(self.hands)
+                self.resource.add_ingredient(player.hands)
+                player.hands.place = self.resource
                 player.hands = None
                 
             return plate_conditions
@@ -160,15 +160,6 @@ class CBoard(CounterTop):
         self.chopper = None
         self.progress_increment = 0.33
         # CBoards.add(self)
-
-    def draw(self, surface):
-        #Overriden because of the progress bars 
-        pygame.draw.rect(surface, self.image, self.rect)
-
-        if (self.resource is not None):
-            progress, bar = self.get_progress_bar(surface)
-            pygame.draw.rect(*progress) #Unpack the tuple
-            pygame.draw.rect(*bar)
 
     #Remove knife if there was a knife, add a knife if there was no knife
     def adjust_knife(self):
@@ -210,16 +201,16 @@ class CBoard(CounterTop):
         condition = super().remove_resource(player, execute=False)
         condition = condition and self.resource.chopped
         if condition and execute:
-            super().remove_resource(player, execute)
             self.resource.progress = 0
+            super().remove_resource(player, execute)
             self.adjust_knife()
         
         return condition
     
     @interaction_method
     def start_chopping(self, player, execute = True):
-        if ((player.resource != None) & (player.hands == None)):
-            if(player.resource.chopped):
+        if ((self.resource != None) & (player.hands == None)):
+            if(self.resource.chopped):
                 return False
             
             if execute:
@@ -231,7 +222,7 @@ class CBoard(CounterTop):
     
     def chop(self):
         self.resource.progress += self.progress_increment
-        if self.resource.progress >= self.progress_max:
+        if self.resource.progress >= 100:
             self.resource.progress = 0
             self.chopping = False
             self.resource.chop()
@@ -240,21 +231,20 @@ class CBoard(CounterTop):
         if(self.chopper != None):
             if(self.chopper.chopping == self):
                 self.chop()
-        
-        if(self.resource != None):
-            if(self.resource.chopped == False):
-                self.draw_progress_bar()
             
         if (not self.chopping):
             return None
         
-    def get_progress_bar(self, screen):
-        bar_length = 50 #Should be 50
-        bar_height = 10
-        fill = (self.resource.progress / self.progress_max) * bar_length
-        progress = (screen, GREEN, [self.rect.x + 16 - bar_length/2, self.rect.y - 20, fill, bar_height])
-        bar = (screen, BLACK, [self.rect.x + 16 - bar_length/2, self.rect.y - 20, bar_length, bar_height], 2)
-        return progress, bar
+    def draw_progress_bar(self, screen):
+        if self.resource is not None and not self.resource.chopped:
+            bar_length = 50 #Should be 50
+            bar_height = 10
+            fill = (self.resource.progress / 100) * bar_length
+            progress = (screen, GREEN, [self.rect.x + 16 - bar_length/2, self.rect.y - 20, fill, bar_height])
+            bar = (screen, BLACK, [self.rect.x + 16 - bar_length/2, self.rect.y - 20, bar_length, bar_height], 2)
+            pygame.draw.rect(*progress)
+            pygame.draw.rect(*bar)
+            return progress, bar
         
 # Fryers = pygame.sprite.Group()
 class Fryer(CounterTop):
@@ -266,20 +256,11 @@ class Fryer(CounterTop):
         self.frier = None
         self.progress_increment = 0.33
         # Fryers.add(self)
-        
-    def draw(self, surface):
-        #Overriden because of the progress bars 
-        pygame.draw.rect(surface, self.image, self.rect)
-
-        if (self.resource is not None):
-            progress, bar = self.get_progress_bar(surface)
-            pygame.draw.rect(*progress) #Unpack the tuple
-            pygame.draw.rect(*bar)
     
     @interaction_method
     def start_frying(self, player, execute = True):
         if ((self.resource != None) & (player.hands == None)):
-            if(player.resource.fried or self.frying):
+            if(self.resource.fried or self.frying):
                 return False
             
             if execute:
@@ -313,14 +294,12 @@ class Fryer(CounterTop):
     def remove_resource(self, player, execute):
         #MODIFIED TO ADD A CONDITION THAT A RESOURCE MUST BE CHOPPED
         condition = super().remove_resource(player, execute=False)
-        condition = condition and self.resource.Fried
-        if condition:
+        condition = condition and self.resource.fried
+        if condition and execute:
+            self.resource.progress = 0
             super().remove_resource(player, execute)
-            if execute:
-                self.resource.progress = 0
-                return True
         
-        return False
+        return condition
         
 
     def update(self): #SEE WHAT ACTION THE PLAYER FROM BEFORE MAKES 
@@ -330,21 +309,20 @@ class Fryer(CounterTop):
                 self.resource.progress = 0
                 self.frying = False
                 self.resource.fry()
-                
-        if(self.resource != None):
-            if(self.resource.fried == False):
-                self.draw_progress_bar()
             
         if (not self.frying):
             return None
 
-    def get_progress_bar(self, screen):
-        bar_length = 50 #Should be 50
-        bar_height = 10
-        fill = (self.resource.progress / self.progress_max) * bar_length
-        progress = (screen, GREEN, [self.rect.x + 16 - bar_length/2, self.rect.y - 20, fill, bar_height])
-        bar = (screen, BLACK, [self.rect.x + 16 - bar_length/2, self.rect.y - 20, bar_length, bar_height], 2)
-        return progress, bar
+    def draw_progress_bar(self, screen):
+        if self.resource is not None and not self.resource.fried:
+            bar_length = 50 #Should be 50
+            bar_height = 10
+            fill = (self.resource.progress / 100) * bar_length
+            progress = (screen, GREEN, [self.rect.x + 16 - bar_length/2, self.rect.y - 20, fill, bar_height])
+            bar = (screen, BLACK, [self.rect.x + 16 - bar_length/2, self.rect.y - 20, bar_length, bar_height], 2)
+            pygame.draw.rect(*progress)
+            pygame.draw.rect(*bar)
+            return progress, bar
         
 class CBelt(CounterTop):
     def __init__(self, position, board, graphic = WAITER_POINT):
@@ -354,7 +332,6 @@ class CBelt(CounterTop):
     @interaction_method
     def put_resource(self, player, execute):
         condition = super().put_resource(player, execute=False)
-        condition = condition
         if not condition: #Like this because isinstance player.hands, Plate requires player.hands to not be none
             return False
         
@@ -365,6 +342,7 @@ class CBelt(CounterTop):
             self.board.Menu.serve_dish(resource)
             [x.kill() for x in resource.dish]
             resource.kill()
+            player.hands = None
         
         return condition
 
@@ -373,15 +351,17 @@ class TrashCan(CounterTop):
         super().__init__(position, board=board, graphic=graphic)
     
     @interaction_method
-    #Overriding - same as CBelt, but without registering the dish
-    def put_resource(self, resource):
-        if(isinstance(resource, Plate)):
-            for x in resource.dish:
-                x.place = None
-                x.kill()
-            
-        resource.place = None
-        resource.kill()
+    def put_resource(self, player, execute):
+        condition = super().put_resource(player, execute=False)
+        if (condition and execute):
+            resource = player.hands
+            if isinstance(resource, Plate):
+                [x.kill() for x in resource.dish]
+                
+            resource.kill()
+            player.hands = None
+        
+        return condition
 
 
         

@@ -1,11 +1,10 @@
 import pygame
-import math
 from Objects import Object
 from Foods import Plate, Potato, Fish
 from constants import PLAYER1_GRAPHIC, PLAYER2_GRAPHIC
 
 class Player(Object):
-    HAND_LENGTH = 32*32*2 - 5
+    HAND_LENGTH = 1620 #roughly (32*sqrt(2) - 5)^2
     def __init__(self, position, graphic, controls, board):
         super().__init__(position, graphic=graphic, board=board)
         self.controls = controls
@@ -18,7 +17,8 @@ class Player(Object):
     def is_player(self):
         return True
     
-    def action_possible(self, Interactables): #Thats ugly but oh well
+    def action_possible(self): #Thats ugly but oh well
+        Interactables = self.board.Interactables
         for interactable in Interactables: #How do I get the Interactables? Either pass it as an argument or add it to the initialization. I mean somewhere else I ask to get nonpassables
             if (self.check_distance(interactable) < self.HAND_LENGTH):
                 interactions = interactable.get_actions()
@@ -54,9 +54,8 @@ class Player(Object):
         
         if (keys[self.controls['ACTION']] & (self.action_cooldown <= 0)):
             self.chopping = None
-            action = self.action_possible(Interactables)
+            action = self.action_possible()
             if(action is not None):
-                print("ACTION BEING MADE")
                 action(self, execute=True)
                 self.action_cooldown = 20
                 return 0 
