@@ -1,4 +1,6 @@
 import tensorflow as tf
+import os
+
 class Buffer():
     def __init__(self, tfrecord_file='data.tfrecord', buffer_size = 1e5, batch_size=64, visual_state_dims=(108, 144, 3), numerical_state_dims = (24,), action_idxs_dims=(2,), y_target_dims=()):
         self.tfrecord_writer = tf.io.TFRecordWriter(tfrecord_file)  # Initialize TFRecord writer
@@ -63,5 +65,10 @@ class Buffer():
         
         return dataset
         
-    def close_writer(self):
+    def reset(self):
         self.tfrecord_writer.close()
+
+        if os.path.exists(self.tfrecord_file):
+            os.remove(self.tfrecord_file) #Reset the buffer
+
+        self.tfrecord_writer = tf.io.TFRecordWriter(self.tfrecord_file)

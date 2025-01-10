@@ -85,10 +85,11 @@ class Agent:
                 self.optimizer.apply_gradients(zip(gradients, self.model.trainable_variables))
                 losses_in_epoch.append(loss_value)
                 
-            losses.append(losses_in_epoch)
+            losses.append(sum(losses_in_epoch)/len(losses_in_epoch))
         
         save_file = self.save_file if self.save_file != None else "Misha.keras"
         self.model.save(save_file)
+        self.buffer.reset()
                 
         return losses
     
