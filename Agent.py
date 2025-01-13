@@ -52,7 +52,7 @@ class Agent:
         visual_state = self.former_visual_state
         numerical_state = self.former_numerical_state
         action_idxs = self.former_action_idxs
-        y_target = np.float32(reward + np.max(self.model(future_state)) * gamma)
+        y_target = np.float32([reward + np.max(self.model(future_state)) * gamma]) #[] so that its not just a scalar
         self.buffer.add_experience_to_memory(visual_state, numerical_state, action_idxs, y_target)
         
         self.former_visual_state = None
@@ -69,13 +69,17 @@ class Agent:
         loss = tf.reduce_mean(tf.square(y_target - avg_q_values))
         return loss
     
-    def train_on_moves(self, epochs = 3):            
+    def train_on_moves(self, epochs = 3):
         losses = []
         
         for _ in range (epochs):
             dataset = self.buffer.create_dataset()
             losses_in_epoch = []
-            for visual_state, numerical_state, action_idxs_batch, y_target_batch in dataset:                
+            for batch in dataset:    
+                visual_state = batch["visual_state"]
+                numerical_state = batch["numerical_state"]
+                action_idxs_batch = batch["action_idxs"]
+                y_target_batch = batch["y_target"]    
                 with tf.GradientTape() as tape:
                     q_preds = self.model([visual_state, numerical_state])
                     loss_value = self.loss(q_preds, action_idxs_batch, y_target_batch)

@@ -10,7 +10,7 @@ class Game:
         self.misha_playing = misha_playing
         self.tick_length = tick_length
         self.clock = pygame.time.Clock()
-        self.action_rate = 5
+        self.action_rate = 10
         
         if misha_playing:
             self.Agent = agent 
