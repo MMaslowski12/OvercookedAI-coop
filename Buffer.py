@@ -73,8 +73,7 @@ class Buffer():
     def reset(self):
         self.tfrecord_writer.close()
 
-        if os.path.exists(self.tfrecord_file):
-            os.remove(self.tfrecord_file) #Reset the buffer
+        os.remove(self.tfrecord_file) #Reset the buffer
 
         self.tfrecord_writer = tf.io.TFRecordWriter(self.tfrecord_file)
         

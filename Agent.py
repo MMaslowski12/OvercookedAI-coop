@@ -21,7 +21,7 @@ class Agent:
         self.learning = learning
         if learning:
             tf.keras.mixed_precision.set_global_policy('mixed_float16')
-            self.optimizer = tf.keras.optimizers.Adam(learning_rate = 1e-4)
+            self.optimizer = tf.keras.optimizers.Adam()
             self.buffer = Buffer()
             self.save_file = save_file
 
