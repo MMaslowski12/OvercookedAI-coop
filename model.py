@@ -24,6 +24,8 @@ def initialize_model():
     model.compile()
 
     model.summary()
+    
+    return model
     # model.save('Misha.keras')
 
 # initialize_model()

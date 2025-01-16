@@ -8,14 +8,12 @@ import tracemalloc
 tracemalloc.start()
 
 class Agent:
-    def __init__(self, learning, save_file = None):
-        if (save_file == None):
+    def __init__(self, learning, save_file = None, initialize=False):          
+        if(initialize):
             self.model = initialize_model()
-            #initialize using model or sth
-            
+        
         else:
-            self.model = tf.keras.models.load_model("Misha.keras", safe_mode=False)
-            #Save the model
+            self.model = tf.keras.models.load_model(save_file, safe_mode=False)
             
         self.eps_tick = 0
         self.learning = learning
@@ -52,6 +50,7 @@ class Agent:
         visual_state = self.former_visual_state
         numerical_state = self.former_numerical_state
         action_idxs = self.former_action_idxs
+        
         y_target = np.float32([reward + np.max(self.model(future_state)) * gamma]) #[] so that its not just a scalar
         self.buffer.add_experience_to_memory(visual_state, numerical_state, action_idxs, y_target)
         
@@ -71,7 +70,6 @@ class Agent:
     
     def train_on_moves(self, epochs = 3):
         losses = []
-        
         for _ in range (epochs):
             dataset = self.buffer.create_dataset()
             losses_in_epoch = []
@@ -79,7 +77,8 @@ class Agent:
                 visual_state = batch["visual_state"]
                 numerical_state = batch["numerical_state"]
                 action_idxs_batch = batch["action_idxs"]
-                y_target_batch = batch["y_target"]    
+                y_target_batch = batch["y_target"] 
+                   
                 with tf.GradientTape() as tape:
                     q_preds = self.model([visual_state, numerical_state])
                     loss_value = self.loss(q_preds, action_idxs_batch, y_target_batch)
@@ -88,6 +87,7 @@ class Agent:
                 gradients = tape.gradient(loss_value, self.model.trainable_variables)
                 self.optimizer.apply_gradients(zip(gradients, self.model.trainable_variables))
                 losses_in_epoch.append(loss_value)
+                print(losses_in_epoch)
                 
             losses.append(sum(losses_in_epoch)/len(losses_in_epoch))
         

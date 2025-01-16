@@ -1,19 +1,10 @@
 import numpy as np
 
 losses = np.load('losses.npy')
-print(losses)
+print("LOSSES: ", losses)
+print("TRAINS DONE: ", len(losses))
 
 file_sizes = np.load('file_sizes.npy')
-print(file_sizes)
-
-
-
-#WTF is this increasing? not flushed properly each game is ~ 145MB
-
-#
-
-for i in range (15):
-    if ((i + 1) % 3) == 0:
-        print("xd")
-    print(i)
+print("FILE SIZES:", file_sizes)    
+print("GAMES PLAYED: ", len(file_sizes))
     
