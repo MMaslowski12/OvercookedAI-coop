@@ -4,8 +4,8 @@ import tensorflow as tf
 from Buffer import Buffer
 
 from model import initialize_model
-import tracemalloc
-tracemalloc.start()
+import logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class Agent:
     def __init__(self, learning, save_file = None, initialize=False):          
@@ -19,7 +19,7 @@ class Agent:
         self.learning = learning
         if learning:
             tf.keras.mixed_precision.set_global_policy('mixed_float16')
-            self.optimizer = tf.keras.optimizers.Adam()
+            self.optimizer = tf.keras.optimizers.Adam(learning_rate=5e-5)
             self.buffer = Buffer()
             self.save_file = save_file
 
@@ -61,11 +61,16 @@ class Agent:
     def loss(self, qs, actions, y_target):
         #gather the qs of actions that were taken by the bot
         q_values_of_actions = tf.gather(qs, actions, batch_dims=1, axis=1)
+        # logging.debug(f"q_values of actions: {q_values_of_actions[10]}")
 
         #Average the q_values across the two actions (average of the Q-value)
         #Like this and not losses separately because there is no point for q-value of either to predict the entire q-value - they are inherently entangled, so the loss should be entangled, too
         avg_q_values = tf.reduce_mean(q_values_of_actions, axis = 1, keepdims=True)
-        loss = tf.reduce_mean(tf.square(y_target - avg_q_values))
+        # logging.debug(f"average q_values: {avg_q_values[10]}")
+        
+        square_losses = tf.square(y_target - avg_q_values)
+        # logging.debug(f"losses: {square_losses[10]}")
+        loss = tf.reduce_mean(square_losses)
         return loss
     
     def train_on_moves(self, epochs = 3):
@@ -82,12 +87,22 @@ class Agent:
                 with tf.GradientTape() as tape:
                     q_preds = self.model([visual_state, numerical_state])
                     loss_value = self.loss(q_preds, action_idxs_batch, y_target_batch)
+                    
+                    # logging.debug(f"random q_predicts: {q_preds[10]}")
+                    # logging.debug(f"random action_idxs: {action_idxs_batch[10]}")
+                    # logging.debug(f"random y_targets: {y_target_batch[10]}")
+                    
 
                 # Calculate gradients and apply
                 gradients = tape.gradient(loss_value, self.model.trainable_variables)
                 self.optimizer.apply_gradients(zip(gradients, self.model.trainable_variables))
                 losses_in_epoch.append(loss_value)
-                print(losses_in_epoch)
+                
+                q_preds_test = self.model([visual_state, numerical_state])
+                loss_value_test = self.loss(q_preds_test, action_idxs_batch, y_target_batch)
+                print("/\n"*2)
+                print("new loss in a test delta: ", loss_value_test - loss_value, (loss_value_test - loss_value)/loss_value)
+                print("/\n"*2)
                 
             losses.append(sum(losses_in_epoch)/len(losses_in_epoch))
         
