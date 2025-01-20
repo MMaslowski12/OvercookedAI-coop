@@ -2,10 +2,14 @@ import numpy as np
 from random import random
 import tensorflow as tf
 from Buffer import Buffer
-
 from model import initialize_model
+
 import logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'  # Show all logs
+tf.debugging.set_log_device_placement(True)
 
 class Agent:
     def __init__(self, learning, save_file = None, initialize=False):          
@@ -17,15 +21,30 @@ class Agent:
             
         self.eps_tick = 0
         self.learning = learning
+        self.check_gpu()
+        
         if learning:
             tf.keras.mixed_precision.set_global_policy('mixed_float16')
             self.optimizer = tf.keras.optimizers.Adam(learning_rate=1e-4)
             self.buffer = Buffer()
             self.save_file = save_file
 
+    def check_gpu(self):
+        gpus = tf.config.list_physical_devices('GPU')
+        if not gpus:
+            print("No GPU found. TensorFlow is using the CPU.")
+        else:
+            print(f"GPUs detected: {[gpu.name for gpu in gpus]}")
+            for gpu in gpus:
+                tf.config.experimental.set_memory_growth(gpu, True)   
+                
+    def set_gamma(self, value): #Gamma is set so that events in 30 seconds are worth 10% less.   
+        self.gamma = value
+        
+        
     def get_eps(self):
         self.eps_tick += 1
-        return 0.1 + 0.9 * np.exp(- 1e-5/2 * self.eps_tick)
+        return 0.1 + 0.9 * np.exp(- 1e-5 * self.eps_tick) #CHANGE THIS LATER ON 
     
     
     def get_qs(self, state, random_exploration = False):
@@ -37,8 +56,9 @@ class Agent:
             
         q_values = self.model.predict(state)
         q_values = q_values[0] #Get rid of the batch_size dimension: goes from (1, 10) to (10,) 
-                    
+          
         return q_values
+        
     
     def remember_actions(self, state, action_idxs):
         action_idxs[1] += 5 #To account for the fact that indices for second's move are at [5: 10] of Misha's output
@@ -46,7 +66,8 @@ class Agent:
         self.former_numerical_state = np.array(state[1][0])
         self.former_action_idxs = np.array(action_idxs)
     
-    def add_experience_to_memory(self, future_state, reward, gamma = 0.9984): #Gamma is set so that events in 30 seconds are worth 10% less.        
+    def add_experience_to_memory(self, future_state, reward):  
+        gamma = self.gamma    
         visual_state = self.former_visual_state
         numerical_state = self.former_numerical_state
         action_idxs = self.former_action_idxs

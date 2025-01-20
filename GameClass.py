@@ -1,7 +1,9 @@
 import pygame
 from Board import Board
 from map_generator import generate_map
-
+import logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+        
 class Game:
     def __init__(self, misha_playing, tick_length=999999999, agent = None):
         pygame.init()    
@@ -11,11 +13,22 @@ class Game:
         self.tick_length = tick_length
         self.clock = pygame.time.Clock()
         self.action_rate = 10
-        
-        if misha_playing:
+        self.FPS = 60
+        self.debug = True
+        if misha_playing or self.debug:
+            #gamma**(60/self.action_rate) = 0.95 
+            #gamma = 0.95 ** (self.action_rate/60)
+            gamma_value = 0.95 ** (self.action_rate/self.FPS) #worth 95% of the value after one second. if it was 97% of the original value in 1 second: 86% in 5 seconds, 74% in 10 seconds, 63% in 15 seconds, 54% in 20 seconds, etc.
             self.Agent = agent 
+            self.Agent.set_gamma(gamma_value)
         
         self.start_time = pygame.time.get_ticks()
+        
+    def _debug_sonda(self):
+        moves = ["UP", "DOWN", "LEFT", "RIGHT", "ACTION"]
+        qs = self.Agent.get_qs(self.Board.get_state(), random_exploration=False)
+        action_idxs, _ = self.qs2actions(qs)
+        logging.debug(f"Qs: {qs} \n Optimal moves: {moves[action_idxs[0]], moves[action_idxs[1]]}. \n Delta: {(qs[action_idxs[0]] + qs[action_idxs[1]])/(2*sum(qs))} \n /")
         
     def qs2actions(self, qs):
         p1_values = qs[0:5]
@@ -51,6 +64,8 @@ class Game:
         
         else:
             actions = pygame.key.get_pressed()
+            if self.debug and (self.tick % 180 == 0):
+                self._debug_sonda()
         
         return actions
     
@@ -64,6 +79,7 @@ class Game:
     
     def run(self):
         running = True
+        self.debug = True
         self.tick = 0
         while running:
             if not self.misha_playing or not self.Agent.learning:
@@ -73,7 +89,7 @@ class Game:
                         break
                     
                 pygame.display.flip()
-                self.clock.tick(60)   
+                self.clock.tick(self.FPS)   
                 
             if (self.tick % self.action_rate == 0):
                 #The Consequences
