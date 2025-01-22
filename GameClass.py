@@ -5,7 +5,7 @@ import logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
         
 class Game:
-    def __init__(self, misha_playing, tick_length=999999999, agent = None):
+    def __init__(self, misha_playing, tick_length=999999999, agent = None, debug = False, visual_debug = False):
         pygame.init()    
         self.Board = Board(generate_map)
         
@@ -14,7 +14,8 @@ class Game:
         self.clock = pygame.time.Clock()
         self.action_rate = 10
         self.FPS = 60
-        self.debug = True
+        self.debug = debug
+        self.visual_debug = visual_debug
         if misha_playing or self.debug:
             #gamma**(60/self.action_rate) = 0.95 
             #gamma = 0.95 ** (self.action_rate/60)
@@ -79,10 +80,9 @@ class Game:
     
     def run(self):
         running = True
-        self.debug = True
         self.tick = 0
         while running:
-            if not self.misha_playing or not self.Agent.learning:
+            if not self.misha_playing or not self.Agent.learning or self.visual_debug:
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
                         running = False

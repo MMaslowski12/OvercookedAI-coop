@@ -24,6 +24,15 @@ class Agent:
         self.check_gpu()
         
         if learning:
+            gpus = tf.config.list_physical_devices('GPU')
+            if gpus:
+                print("GPUs: ", gpus)
+                for gpu in gpus:
+                    tf.config.experimental.set_memory_growth(gpu, True)
+            
+            else:
+                raise RuntimeError("No GPUs!")
+
             tf.keras.mixed_precision.set_global_policy('mixed_float16')
             self.optimizer = tf.keras.optimizers.Adam(learning_rate=1e-4)
             self.buffer = Buffer()
