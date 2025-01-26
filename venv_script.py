@@ -2,6 +2,22 @@ import subprocess
 import sys
 import os
 
+def run_command(command, description=""):
+    """Helper function to run a command and handle errors."""
+    result = subprocess.run(
+        command,
+        capture_output=True,  # Capture stdout and stderr
+        text=True,            # Output as text (string)
+        check=False           # Don't automatically raise exceptions
+    )
+    if result.returncode == 0:
+        print(f"{description} succeeded.")
+    else:
+        print(f"{description} failed with return code: {result.returncode}")
+        print(f"Standard Output:\n{result.stdout}")
+        print(f"Standard Error:\n{result.stderr}")
+        raise subprocess.CalledProcessError(result.returncode, command)
+
 def install_requirements(requirements_file="requirements.txt"):
     """
     Installs dependencies from a requirements.txt file.
@@ -20,10 +36,10 @@ def freeze():
 def activate_venv(venv_name="venv"):
     print(sys.executable)
     if not os.path.exists(venv_name):
-        subprocess.check_call([sys.executable, "-c", "print('Hello, World!')"])
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "virtualenv"])
+        run_command([sys.executable, "-c", "print('Hello, World!')"])
+        run_command([sys.executable, "-m", "pip", "install", "virtualenv"])
         print("installed venv")
-        subprocess.check_call([sys.executable, "-m", "venv", venv_name])
+        run_command([sys.executable, "-m", "venv", venv_name])
         print("Venv created")
         
     venv_python = os.path.join(venv_name, "bin", "python")
