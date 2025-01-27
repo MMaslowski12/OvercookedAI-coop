@@ -21,35 +21,14 @@ class Agent:
             
         self.eps_tick = 0
         self.learning = learning
-        self.check_gpu()
         
         if learning:
-            gpus = tf.config.list_physical_devices('GPU')
-            if gpus:
-                print("GPUs: ", gpus)
-                for gpu in gpus:
-                    tf.config.experimental.set_memory_growth(gpu, True)
-            
-            else:
-                raise RuntimeError("No GPUs!")
-
-            tf.keras.mixed_precision.set_global_policy('mixed_float16')
             self.optimizer = tf.keras.optimizers.Adam(learning_rate=1e-4)
             self.buffer = Buffer()
-            self.save_file = save_file
-
-    def check_gpu(self):
-        gpus = tf.config.list_physical_devices('GPU')
-        if not gpus:
-            print("No GPU found. TensorFlow is using the CPU.")
-        else:
-            print(f"GPUs detected: {[gpu.name for gpu in gpus]}")
-            for gpu in gpus:
-                tf.config.experimental.set_memory_growth(gpu, True)   
+            self.save_file = save_file 
                 
     def set_gamma(self, value): #Gamma is set so that events in 30 seconds are worth 10% less.   
         self.gamma = value
-        
         
     def get_eps(self):
         self.eps_tick += 1

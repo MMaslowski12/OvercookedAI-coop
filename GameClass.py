@@ -2,13 +2,13 @@ import pygame
 from Board import Board
 from map_generator import generate_map
 import logging
+import tensorflow as tf
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
         
 class Game:
     def __init__(self, misha_playing, tick_length=999999999, agent = None, debug = False, visual_debug = False):
         pygame.init()    
         self.Board = Board(generate_map)
-        
         self.misha_playing = misha_playing
         self.tick_length = tick_length
         self.clock = pygame.time.Clock()
@@ -22,9 +22,9 @@ class Game:
             gamma_value = 0.95 ** (self.action_rate/self.FPS) #worth 95% of the value after one second. if it was 97% of the original value in 1 second: 86% in 5 seconds, 74% in 10 seconds, 63% in 15 seconds, 54% in 20 seconds, etc.
             self.Agent = agent 
             self.Agent.set_gamma(gamma_value)
-        
+            
         self.start_time = pygame.time.get_ticks()
-        
+    
     def _debug_sonda(self):
         moves = ["UP", "DOWN", "LEFT", "RIGHT", "ACTION"]
         qs = self.Agent.get_qs(self.Board.get_state(), random_exploration=False)
