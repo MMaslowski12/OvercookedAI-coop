@@ -3,13 +3,39 @@ from random import random
 import tensorflow as tf
 from Buffer import Buffer
 from model import initialize_model
-
 import logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'  # Show all logs
-tf.debugging.set_log_device_placement(True)
+
+def setup_logging():
+    # Configure application logging with green color
+    app_handler = logging.StreamHandler()
+    app_handler.setFormatter(logging.Formatter(
+        '\033[92m%(asctime)s - %(levelname)s - %(message)s\033[0m'
+    ))
+    app_logger = logging.getLogger('app')
+    app_logger.addHandler(app_handler)
+    app_logger.setLevel(logging.DEBUG)
+
+    # Custom filter for GPU-related messages
+    class GPUMessageFilter(logging.Filter):
+        def filter(self, record):
+            return any(keyword in record.getMessage().upper() for keyword in 
+                    ['GPU', 'DEVICE:GPU', 'XLA_GPU', 'CUDNN'])
+
+    # Configure TensorFlow logging with blue color and GPU filter
+    tf_handler = logging.StreamHandler()
+    tf_handler.setFormatter(logging.Formatter(
+        '\033[94m[TensorFlow] %(message)s\033[0m'
+    ))
+    tf_handler.addFilter(GPUMessageFilter())  # Add GPU filter to handler
+
+    tf.get_logger().handlers.clear()  # Remove existing handlers
+    tf.get_logger().addHandler(tf_handler)
+    tf.get_logger().setLevel(logging.INFO)
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'  # Show INFO and above
+    
+setup_logging()
 
 class Agent:
     def __init__(self, learning, save_file = None, initialize=False):          
