@@ -12,7 +12,7 @@ class Game:
         self.misha_playing = misha_playing
         self.tick_length = tick_length
         self.clock = pygame.time.Clock()
-        self.action_rate = 10
+        self.action_rate = 8
         self.FPS = 60
         self.debug = debug
         self.visual_debug = visual_debug
@@ -72,7 +72,7 @@ class Game:
     
     def _get_consequences(self):
         rewards = self.Board.get_rewards()
-        if(self.tick != 0): 
+        if self.tick != 0: 
             self.Agent.add_experience_to_memory(self.Board.get_state(), rewards - self.former_rewards)
         
         self.former_rewards = rewards
@@ -88,6 +88,18 @@ class Game:
                         running = False
                         break
                     
+                if self.visual_debug:
+                    # Create font object if not already created
+                    if not hasattr(self, 'font'):
+                        self.font = pygame.font.Font(None, 36)
+                    
+                    # Render score text
+                    score_text = f"Score: {self.Board.get_rewards():.1f}"
+                    score_surface = self.font.render(score_text, True, (0, 0, 0))                    
+                    # Position in top-left corner with small padding
+                    self.Board.screen.blit(score_surface, (10, 10))
+                    # self.Board.draw_q_value_heatmap(self.Agent, update=self.tick % 600 == 0)
+                        
                 pygame.display.flip()
                 self.clock.tick(self.FPS)   
                 

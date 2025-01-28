@@ -43,7 +43,7 @@ class Agent:
             self.model = initialize_model()
         
         else:
-            self.model = tf.keras.models.load_model(save_file, safe_mode=False)
+            self.model = tf.keras.models.load_model(save_file)
             
         self.eps_tick = 0
         self.learning = learning
@@ -58,7 +58,7 @@ class Agent:
         
     def get_eps(self):
         self.eps_tick += 1
-        return 0.1 + 0.9 * np.exp(- 1e-5 * self.eps_tick) #CHANGE THIS LATER ON 
+        return 0.1 + 0.9 * np.exp(-2e-6 * self.eps_tick) #CHANGE THIS LATER ON 
     
     
     def get_qs(self, state, random_exploration = False):
@@ -118,15 +118,17 @@ class Agent:
                 numerical_state = batch["numerical_state"]
                 action_idxs_batch = batch["action_idxs"]
                 y_target_batch = batch["y_target"] 
+                logging.debug(f"visual_state shape: {visual_state.shape}")
+                logging.debug(f"numerical_state shape: {numerical_state.shape}")
+                logging.debug(f"action_idxs_batch shape: {action_idxs_batch.shape}")
+                logging.debug(f"y_target_batch shape: {y_target_batch.shape}")
                    
                 with tf.GradientTape() as tape:
                     q_preds = self.model([visual_state, numerical_state])
                     loss_value = self.loss(q_preds, action_idxs_batch, y_target_batch)
-                    
                     # logging.debug(f"random q_predicts: {q_preds[10]}")
                     # logging.debug(f"random action_idxs: {action_idxs_batch[10]}")
-                    # logging.debug(f"random y_targets: {y_target_batch[10]}")
-                    
+                    # logging.debug(f"random y_targets: {y_target_batch[10]}")                    
 
                 # Calculate gradients and apply
                 gradients = tape.gradient(loss_value, self.model.trainable_variables)
