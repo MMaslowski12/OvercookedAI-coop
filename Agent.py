@@ -58,7 +58,7 @@ class Agent:
         
     def get_eps(self):
         self.eps_tick += 1
-        return 0.1 + 0.9 * np.exp(-2e-6 * self.eps_tick) #CHANGE THIS LATER ON 
+        return 0.1 + 0.9 * np.exp(-1e-6 * self.eps_tick) #CHANGE THIS LATER ON 
     
     
     def get_qs(self, state, random_exploration = False):
