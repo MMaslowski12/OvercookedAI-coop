@@ -1,4 +1,4 @@
-from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, Flatten, Dense, Concatenate, Resizing
+from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, Flatten, Dense, Concatenate, BatchNormalization
 from tensorflow.keras.models import Model
 import tensorflow as tf
 print(tf.__version__)
@@ -6,26 +6,37 @@ print(tf.__version__)
 def initialize_model():
     image_input = Input(shape=(108, 144, 3))
     #This defins the network through which the visual input (the screenshot of the board) will go through before joining other input\\
-    x = Conv2D(8, (3, 3), activation='relu')(image_input)
-    x = MaxPooling2D(3, 3)(x)
-    x = Conv2D(16, (3, 3), activation='relu')(x)
-    x = MaxPooling2D((3, 3))(x)
+    x = Conv2D(32, (3, 3), activation='relu')(image_input)
+    x = BatchNormalization()(x)
+    x = MaxPooling2D(2, 2)(x)
     x = Conv2D(32, (3, 3), activation='relu')(x)
-    x = MaxPooling2D((3, 3))(x)
+    x = BatchNormalization()(x)
+    x = MaxPooling2D((2, 2))(x)
+    x = Conv2D(64, (3, 3), activation='relu')(x)
+    x = BatchNormalization()(x)
+    x = MaxPooling2D((2, 2))(x)
+    x = Conv2D(64, (3, 3), activation='relu')(x)
+    x = BatchNormalization()(x)
+    x = MaxPooling2D((2, 2))(x)
     x = Flatten()(x)
 
+    x = Dense(256, activation='relu')(x)
+    x = BatchNormalization()(x)
     x = Dense(128, activation='relu')(x)
-    x = Dense(64, activation='relu')(x)
-    additional_input = Input(shape=(24,)) 
+    x = BatchNormalization()(x)
+    additional_input = Input(shape=(28,)) 
     combined = Concatenate()([x, additional_input])
-    x = Dense(32, activation='relu')(combined)
+    x = Dense(64, activation='relu')(combined)
+    x = BatchNormalization()(x)
+    x = Dense(64, activation='relu')(x)
+    x = BatchNormalization()(x)
     output = Dense(10, activation='linear')(x)
     model = Model(inputs=[image_input, additional_input], outputs=output)
-    model.compile()
 
     model.summary()
+    model.save('Misha.keras')
     
     return model
-    # model.save('Misha.keras')
+   
 
-# initialize_model()
+initialize_model()

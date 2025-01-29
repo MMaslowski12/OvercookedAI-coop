@@ -4,16 +4,21 @@ from GameClass import Game
 from Agent import Agent
 import pygame
 
-def generate_q_value_heatmap():
+def generate_q_value_heatmap(player=1, normalized=True):
     """
-    Generates a heatmap of maximum Q-values by testing different Player1 positions.
+    Generates a heatmap of maximum Q-values by testing different player positions.
+    Args:
+        player: 1 for Player1, 2 for Player2
     Returns a numpy array of Q-values corresponding to floor positions.
     """
     Misha = Agent(learning=False, save_file="Misha.keras") 
-    GameObj = Game(misha_playing=True, tick_length=1000, agent = Misha, debug = True, visual_debug = True) 
+    GameObj = Game(misha_playing=True, tick_length=1000, agent = Misha, debug = True, visual_debug = True)
+
+    # Get player object based on parameter
+    player_obj = GameObj.Board.Player1 if player == 1 else GameObj.Board.Player2
 
     # Store original player position
-    original_pos = GameObj.Board.Player1.rect.center
+    original_pos = player_obj.rect.center
     
     # Create empty heatmap matching floor plan dimensions
     floor_positions = []
@@ -38,7 +43,7 @@ def generate_q_value_heatmap():
     # Test each floor position
     for pos in floor_positions:
         # Move player to test position
-        GameObj.Board.Player1.rect.center = pos
+        player_obj.rect.center = pos
         GameObj.Board.draw()
         
         # Get state and Q-values
@@ -53,21 +58,24 @@ def generate_q_value_heatmap():
         heatmap[grid_y, grid_x] = max_q
         
     # Restore original position
-    GameObj.Board.Player1.rect.center = original_pos
+    player_obj.rect.center = original_pos
     
     # Normalize heatmap using mean and standard deviation
     non_zero_mask = heatmap != 0
+    mean = None
+    std = None
     if non_zero_mask.any():
         non_zero_values = heatmap[non_zero_mask]
         mean = np.mean(non_zero_values)
         std = np.std(non_zero_values)
-        if std != 0:
+        if std != 0 and normalized:
             heatmap[non_zero_mask] = (heatmap[non_zero_mask] - mean) / std
     
-    return heatmap, GameObj.Board
+    return heatmap, GameObj.Board, mean, std
 
 print("xd?")
-heatmap, board = generate_q_value_heatmap()
+# Generate heatmap for Player1 by default
+heatmap, board, mean, std = generate_q_value_heatmap(player=2, normalized=False)
 
 def display_heatmap(heatmap, board):
     # Create a surface for the heatmap
@@ -149,6 +157,7 @@ def display_heatmap(heatmap, board):
     
 print("xd?")
 display_heatmap(heatmap, board)
+print(mean, std)
 
 # Wait for user to close window
 running = True

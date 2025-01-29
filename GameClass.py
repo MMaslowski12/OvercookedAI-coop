@@ -53,9 +53,19 @@ class Game:
         return [p1_idx, p2_idx], actions
             
     
-    def get_actions(self):
+    def get_actions(self, debug=False):
         if (self.misha_playing):
             state = self.Board.get_state()
+            if debug:
+                import matplotlib.pyplot as plt
+                # Get the visual state and remove batch dimension
+                visual_state = state[0].numpy()[0]
+                plt.figure(figsize=(8,6))
+                plt.imshow(visual_state)
+                plt.axis('off')
+                plt.show(block=False)
+                plt.pause(0.1)
+                plt.close()
             qs = self.Agent.get_qs(state, random_exploration=self.Agent.learning)    
                 
             action_idxs, actions = self.qs2actions(qs)

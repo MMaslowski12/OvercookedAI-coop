@@ -89,16 +89,22 @@ class Player(Object):
         
     def get_state(self):
         '''
-        7 binary values describing Player's inventory. In respective order, these are values for whether the following is in Player's hands:
-            - Plate
-            - Raw Fish
-            - Cut Fish
-            - Fried Fish
-            - Raw Potato
-            - Cut Potato
-            - Fried Potato
+        Returns a list of:
+        - coordinates of the Player:
+            - 0: x coordinates of the Player
+            - 1: y coordinates of the Player
+        - 7 binary values describing Player's inventory. In respective order, these are values for whether the following is in Player's hands:
+            - 2: Plate
+            - 3: Raw Fish
+            - 4: Cut Fish
+            - 5: Fried Fish
+            - 6: Raw Potato
+            - 7: Cut Potato
+            - 8: Fried Potato
         '''
-        numerical_data = [0]*7
+        numerical_data = [0]*9
+        numerical_data[0] = self.rect.x
+        numerical_data[1] = self.rect.y
         
         if(self.hands == None):
             return numerical_data
@@ -106,28 +112,28 @@ class Player(Object):
         hand = self.hands
         
         if(isinstance(hand, Plate)):
-            numerical_data[0] = 1
-            numerical_data[3] = hand.dish_dict['Fish']
-            numerical_data[6] = hand.dish_dict['Potato']
+            numerical_data[2] = 1
+            numerical_data[5] = hand.dish_dict['Fish']
+            numerical_data[8] = hand.dish_dict['Potato']
                 
         else:
             if isinstance(hand, Fish):
                 if not hand.chopped:
-                    numerical_data[1] = 1
+                    numerical_data[3] = 1
                 
                 elif not hand.fried:
-                    numerical_data[2] = 1
+                    numerical_data[4] = 1
                 
-                else: numerical_data[3] = 1
+                else: numerical_data[5] = 1
             
             else:
                 if not hand.chopped:
-                    numerical_data[4] = 1
+                    numerical_data[6] = 1
                 
                 elif not hand.fried:
-                    numerical_data[5] = 1
+                    numerical_data[7] = 1
                 
-                else: numerical_data[6] = 1
+                else: numerical_data[8] = 1
                        
         return numerical_data
         
