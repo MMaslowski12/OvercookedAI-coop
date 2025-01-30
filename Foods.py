@@ -140,9 +140,9 @@ class MenuClass():
             if (decider < probability):
                 self.generate_new_dish()
 
-        for i in range (len(self.queue)):
-            self.queue[i].order_in_queue = i
-            self.queue[i].update()
+        # for i in range (len(self.queue)):
+        #     self.queue[i].order_in_queue = i
+            # self.queue[i].update() not sure what this was doing
             
             
     def generate_new_dish(self, prob_chips = 0.5):

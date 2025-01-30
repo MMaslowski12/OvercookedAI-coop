@@ -17,6 +17,16 @@ class Buffer():
         
         
     def _serialize_example(self, visual_state, numerical_state, action_idxs, y_target):
+        print("/\n"*2)
+        print(visual_state.shape)
+        print(self.visual_state_dims)
+        print(numerical_state.shape)
+        print(self.numerical_state_dims)
+        print(action_idxs.shape)
+        print(self.action_idxs_dims)
+        print(y_target.shape)
+        print(self.y_target_dims)
+        print("/\n"*2)
         assert(visual_state.shape == self.visual_state_dims)
         assert(numerical_state.shape == (self.numerical_state_dims,))
         assert(action_idxs.shape == (self.action_idxs_dims, ))
