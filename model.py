@@ -39,4 +39,4 @@ def initialize_model():
     return model
    
 
-initialize_model()
+# initialize_model()
