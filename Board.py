@@ -70,7 +70,7 @@ class Board:
     def update(self, update_actions=False):
         if not self.is_game_over:
             self.Interactables.update()
-            self.Players.update(update_actions=update_actions) 
+            self.Players.update(update_actions=update_actions, state=None if not update_actions else self.get_state()) #Giving the state here to avoid getting the state multiple times. Only give when update is needed
             self.Menu.update()
             self.draw()
             #Players.push_experience_to_buffer()
@@ -126,12 +126,10 @@ class Board:
         if ingredient.fried:
             reward += prep_coeff
             
-        if isinstance(ingredient.place, Fryer) or isinstance(ingredient.place, CBoard):
-            reward += 0.25 * prep_coeff
-        
-        if (ingredient.progress != 0):
-            reward += 0.75 * prep_coeff * ingredient.progress/100
-        
+        if (isinstance(ingredient.place, Fryer) and not ingredient.fried) or (isinstance(ingredient.place, CBoard) and not ingredient.chopped):
+            reward += 0.25 * prep_coeff #25% from just being there
+            reward += 0.75 * prep_coeff * min(ingredient.progress, 100)/100
+            
         return reward
         
 

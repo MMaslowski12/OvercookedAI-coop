@@ -3,6 +3,8 @@ from Objects import Object
 from Foods import Plate, Potato, Fish
 from constants import PLAYER1_GRAPHIC, PLAYER2_GRAPHIC
 import numpy as np
+import time
+import logging
 
 '''
 TODO:
@@ -76,10 +78,8 @@ class Player(Object):
         
         return qs_idx, actions
     
-    def get_actions(self):
-        if (self.misha_playing):
-            state = self.board.get_state()
-                
+    def get_actions(self, state):
+        if (self.misha_playing):    
             qs = self.Agent.get_qs(state, random_exploration=self.Agent.learning)    
             qs_idx, actions = self.qs2actions(qs)
             if self.Agent.learning:
@@ -94,16 +94,18 @@ class Player(Object):
     
     def remember_actions(self, state, action_idx):
         self.former_visual_state = np.array(state[0][0])
+        # logging.debug(f"former_visual_state shape: {self.former_visual_state.shape}")
         self.former_numerical_state = np.array(state[1][0])
+        # logging.debug(f"former_numerical_state shape: {self.former_numerical_state.shape}")
         self.former_action_idx = np.array(action_idx)
     
     def update(self, **kwargs): 
         initial_rewards = self.board.get_rewards()     
         self.action_cooldown -= 1
         if kwargs["update_actions"]:
-            keys = self.get_actions()
+            keys = self.get_actions(state=kwargs["state"])
             self.keys = keys
-            
+        
         keys = self.keys
             
         NonPassables = self.board.NonPassables
@@ -129,15 +131,14 @@ class Player(Object):
         if not moved:
             unmoved_penalty += 10
 
-        self.board.draw()
-        if self.Agent is not None and self.Agent.learning:
+        if kwargs["update_actions"] and self.misha_playing and self.Agent.learning:
+            self.board.draw()
             reward = self.board.get_rewards() - initial_rewards - unmoved_penalty
             assert(self.former_visual_state is not None)
             assert(self.former_numerical_state is not None)
             assert(self.former_action_idx is not None)
             self.Agent.add_experience_to_memory(visual_state = self.former_visual_state, numerical_state = self.former_numerical_state, action_idx = self.former_action_idx, future_state = self.board.get_state(), reward = reward)
-            
-    
+                
     #Get back to the former position if you collided with a wall or a player
     def _bounce_back(self):
         self.rect.x, self.rect.y = self.rect.x - self.last_move[0], self.rect.y - self.last_move[1]

@@ -4,6 +4,7 @@ import tensorflow as tf
 from Buffer import Buffer
 from model import initialize_model
 import logging
+import time
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 import os
 
@@ -49,10 +50,10 @@ class Agent:
         self.learning = learning
         
         if learning:
-            self.optimizer = tf.keras.optimizers.Adam(learning_rate=1e-4)
+            self.optimizer = tf.keras.optimizers.Adam()
             self.buffer = Buffer(tfrecord_file="data"+str(player_number)+".tfrecord")
             self.save_file = save_file 
-            self.gamma = 0.95 ** (8/60) #Action rate is 8, FPS is 60. 95% of the value after 1 second.
+            self.gamma = 0.95 ** (10/60) #Action rate is 10, FPS is 60. 95% of the value after 1 second.
         
     def get_eps(self):
         self.eps_tick += 1
@@ -72,10 +73,9 @@ class Agent:
         return q_values
     
     def add_experience_to_memory(self, visual_state, numerical_state, action_idx, future_state, reward):  
-        gamma = self.gamma    
         action_idx = np.array([action_idx])
         
-        y_target = np.float32([reward + np.max(self.model(future_state)) * gamma]) #[] so that its not just a scalar
+        y_target = np.float32([reward + np.max(self.model(future_state)) * self.gamma]) #[] so that its not just a scalar
         self.buffer.add_experience_to_memory(visual_state, numerical_state, action_idx, y_target)
         
         self.former_visual_state = None
@@ -88,31 +88,37 @@ class Agent:
         # logging.debug(f"q_values of actions: {q_values_of_actions[10]}")
                 
         square_losses = tf.square(y_target - q_values_of_actions)
-        # logging.debug(f"losses: {square_losses[10]}")
+        # logging.debug(f"losses: {square_losses}")
         loss = tf.reduce_mean(square_losses)
         return loss
     
     def train_on_moves(self, epochs = 3):
         losses = []
+        time_per_dataset = 0
         for _ in range (epochs):
+            start_time_epoch = time.time()
             dataset = self.buffer.create_dataset()
+            end_time_epoch = time.time()
+            time_per_dataset += end_time_epoch - start_time_epoch
+            
             losses_in_epoch = []
             for batch in dataset:    
                 visual_state = batch["visual_state"]
                 numerical_state = batch["numerical_state"]
                 action_idx_batch = batch["action_idx"]
                 y_target_batch = batch["y_target"] 
-                logging.debug(f"visual_state shape: {visual_state.shape}")
-                logging.debug(f"numerical_state shape: {numerical_state.shape}")
-                logging.debug(f"action_idx_batch shape: {action_idx_batch.shape}")
-                logging.debug(f"y_target_batch shape: {y_target_batch.shape}")
+                # logging.debug(f"visual_state shape: {visual_state.shape}")
+                # logging.debug(f"numerical_state shape: {numerical_state.shape}")
+                # logging.debug(f"action_idx_batch shape: {action_idx_batch.shape}")
+                # logging.debug(f"y_target_batch shape: {y_target_batch.shape}")
                    
                 with tf.GradientTape() as tape:
                     q_preds = self.model([visual_state, numerical_state])
                     loss_value = self.loss(q_preds, action_idx_batch, y_target_batch)
-                    # logging.debug(f"random q_predicts: {q_preds[10]}")
-                    # logging.debug(f"random action_idx: {action_idx_batch[10]}")
-                    # logging.debug(f"random y_targets: {y_target_batch[10]}")                    
+                    # logging.debug(f"random q_predicts: {q_preds}")
+                    # logging.debug(f"random action_idx: {action_idx_batch}")
+                    # logging.debug(f"random y_targets: {y_target_batch}")
+                    # logging.debug(f"loss_value: {loss_value}")                    
 
                 # Calculate gradients and apply
                 gradients = tape.gradient(loss_value, self.model.trainable_variables)
@@ -121,16 +127,14 @@ class Agent:
                 
                 q_preds_test = self.model([visual_state, numerical_state])
                 loss_value_test = self.loss(q_preds_test, action_idx_batch, y_target_batch)
-                print("/\n"*2)
-                print("new loss in a test delta: ", loss_value_test - loss_value, (loss_value_test - loss_value)/loss_value)
-                print("/\n"*2)
                 
             losses.append(sum(losses_in_epoch)/len(losses_in_epoch))
         
         save_file = self.save_file if self.save_file != None else "Misha.keras"
         self.model.save(save_file)
         self.buffer.reset()
+
                 
-        return losses
+        return losses, time_per_dataset
     
     

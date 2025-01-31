@@ -3,6 +3,7 @@ from Board import Board
 from map_generator import generate_map
 import logging
 import tensorflow as tf
+import time
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
         
 class Game:
@@ -29,6 +30,7 @@ class Game:
     def run(self):
         running = True
         self.tick = 0
+        start_time = time.time()
         while running:
             if not self.learning or self.visual_debug:
                 for event in pygame.event.get():
@@ -64,6 +66,9 @@ class Game:
                     running = False
             
             self.tick += 1
+            if (self.tick % 100 == 0):
+                end_time = time.time()
+                start_time = time.time()
                 
         pygame.display.quit()
         pygame.quit()
