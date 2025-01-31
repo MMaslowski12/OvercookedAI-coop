@@ -2,6 +2,13 @@ import pygame
 from constants import *
 from Foods import Plate, Fish, Potato
 
+def name_tag(name_tag=""):
+    def decorator(func):
+        setattr(func, "name_tag", name_tag)
+        return func
+    
+    return decorator
+
 def interaction_method(func):
     func.interaction_method = True
     return func

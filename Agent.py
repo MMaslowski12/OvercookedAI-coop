@@ -38,9 +38,9 @@ def setup_logging():
 setup_logging()
 
 class Agent:
-    def __init__(self, learning, save_file = None, initialize=False):          
+    def __init__(self, learning, save_file = None, initialize=False, player_number=None):          
         if(initialize):
-            self.model = initialize_model()
+            self.model = initialize_model(player_number)
         
         else:
             self.model = tf.keras.models.load_model(save_file)
@@ -50,11 +50,9 @@ class Agent:
         
         if learning:
             self.optimizer = tf.keras.optimizers.Adam(learning_rate=1e-4)
-            self.buffer = Buffer()
+            self.buffer = Buffer(tfrecord_file="data"+str(player_number)+".tfrecord")
             self.save_file = save_file 
-                
-    def set_gamma(self, value): #Gamma is set so that events in 30 seconds are worth 10% less.   
-        self.gamma = value
+            self.gamma = 0.95 ** (8/60) #Action rate is 8, FPS is 60. 95% of the value after 1 second.
         
     def get_eps(self):
         self.eps_tick += 1
@@ -65,45 +63,31 @@ class Agent:
         if random_exploration:
             is_random = random() < self.get_eps()
             if is_random:
-                randomized_q_values = np.random.rand(10)
+                randomized_q_values = np.random.rand(5)
                 return randomized_q_values
             
         q_values = self.model.predict(state)
-        q_values = q_values[0] #Get rid of the batch_size dimension: goes from (1, 10) to (10,) 
+        q_values = q_values[0] #Get rid of the batch_size dimension: goes from (1, 5) to (5,) 
           
         return q_values
-        
     
-    def remember_actions(self, state, action_idxs):
-        action_idxs[1] += 5 #To account for the fact that indices for second's move are at [5: 10] of Misha's output
-        self.former_visual_state = np.array(state[0][0])
-        self.former_numerical_state = np.array(state[1][0])
-        self.former_action_idxs = np.array(action_idxs)
-    
-    def add_experience_to_memory(self, future_state, reward):  
+    def add_experience_to_memory(self, visual_state, numerical_state, action_idx, future_state, reward):  
         gamma = self.gamma    
-        visual_state = self.former_visual_state
-        numerical_state = self.former_numerical_state
-        action_idxs = self.former_action_idxs
+        action_idx = np.array([action_idx])
         
         y_target = np.float32([reward + np.max(self.model(future_state)) * gamma]) #[] so that its not just a scalar
-        self.buffer.add_experience_to_memory(visual_state, numerical_state, action_idxs, y_target)
+        self.buffer.add_experience_to_memory(visual_state, numerical_state, action_idx, y_target)
         
         self.former_visual_state = None
         self.former_numerical_state = None
-        self.former_action_idxs = None        
+        self.former_action_idx = None        
    
-    def loss(self, qs, actions, y_target):
+    def loss(self, qs, action, y_target):
         #gather the qs of actions that were taken by the bot
-        q_values_of_actions = tf.gather(qs, actions, batch_dims=1, axis=1)
+        q_values_of_actions = tf.gather(qs, action, batch_dims=1, axis=1)
         # logging.debug(f"q_values of actions: {q_values_of_actions[10]}")
-
-        #Average the q_values across the two actions (average of the Q-value)
-        #Like this and not losses separately because there is no point for q-value of either to predict the entire q-value - they are inherently entangled, so the loss should be entangled, too
-        avg_q_values = tf.reduce_mean(q_values_of_actions, axis = 1, keepdims=True)
-        # logging.debug(f"average q_values: {avg_q_values[10]}")
-        
-        square_losses = tf.square(y_target - avg_q_values)
+                
+        square_losses = tf.square(y_target - q_values_of_actions)
         # logging.debug(f"losses: {square_losses[10]}")
         loss = tf.reduce_mean(square_losses)
         return loss
@@ -116,18 +100,18 @@ class Agent:
             for batch in dataset:    
                 visual_state = batch["visual_state"]
                 numerical_state = batch["numerical_state"]
-                action_idxs_batch = batch["action_idxs"]
+                action_idx_batch = batch["action_idx"]
                 y_target_batch = batch["y_target"] 
                 logging.debug(f"visual_state shape: {visual_state.shape}")
                 logging.debug(f"numerical_state shape: {numerical_state.shape}")
-                logging.debug(f"action_idxs_batch shape: {action_idxs_batch.shape}")
+                logging.debug(f"action_idx_batch shape: {action_idx_batch.shape}")
                 logging.debug(f"y_target_batch shape: {y_target_batch.shape}")
                    
                 with tf.GradientTape() as tape:
                     q_preds = self.model([visual_state, numerical_state])
-                    loss_value = self.loss(q_preds, action_idxs_batch, y_target_batch)
+                    loss_value = self.loss(q_preds, action_idx_batch, y_target_batch)
                     # logging.debug(f"random q_predicts: {q_preds[10]}")
-                    # logging.debug(f"random action_idxs: {action_idxs_batch[10]}")
+                    # logging.debug(f"random action_idx: {action_idx_batch[10]}")
                     # logging.debug(f"random y_targets: {y_target_batch[10]}")                    
 
                 # Calculate gradients and apply
@@ -136,7 +120,7 @@ class Agent:
                 losses_in_epoch.append(loss_value)
                 
                 q_preds_test = self.model([visual_state, numerical_state])
-                loss_value_test = self.loss(q_preds_test, action_idxs_batch, y_target_batch)
+                loss_value_test = self.loss(q_preds_test, action_idx_batch, y_target_batch)
                 print("/\n"*2)
                 print("new loss in a test delta: ", loss_value_test - loss_value, (loss_value_test - loss_value)/loss_value)
                 print("/\n"*2)

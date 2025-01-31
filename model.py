@@ -3,7 +3,7 @@ from tensorflow.keras.models import Model
 import tensorflow as tf
 print(tf.__version__)
 
-def initialize_model():
+def initialize_model(player_number):
     image_input = Input(shape=(108, 144, 3))
     #This defins the network through which the visual input (the screenshot of the board) will go through before joining other input\\
     x = Conv2D(32, (3, 3), activation='relu')(image_input)
@@ -30,13 +30,14 @@ def initialize_model():
     x = BatchNormalization()(x)
     x = Dense(64, activation='relu')(x)
     x = BatchNormalization()(x)
-    output = Dense(10, activation='linear')(x)
+    output = Dense(5, activation='linear')(x)
     model = Model(inputs=[image_input, additional_input], outputs=output)
 
     model.summary()
-    model.save('Misha.keras')
+    model.save('Misha'+str(player_number)+'.keras')
     
     return model
    
 
-# initialize_model()
+# initialize_model(1)
+# initialize_model(2)

@@ -75,7 +75,7 @@ def generate_q_value_heatmap(player=1, normalized=True):
 
 print("xd?")
 # Generate heatmap for Player1 by default
-heatmap, board, mean, std = generate_q_value_heatmap(player=2, normalized=False)
+heatmap, board, mean, std = generate_q_value_heatmap(player=1, normalized=False)
 
 def display_heatmap(heatmap, board):
     # Create a surface for the heatmap
