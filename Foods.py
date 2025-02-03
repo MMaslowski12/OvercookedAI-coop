@@ -123,7 +123,7 @@ class MenuClass():
     def __init__(self):
         self.queue = []
         self.max_dishes = 4
-        self.frequency = 15 #Once every X seconds on average, there will be a new dish
+        self.frequency = 10 #Once every X seconds on average, there will be a new dish
         self.game_score = 0
         
         self.font = pygame.font.SysFont("Comic Sans MS", 10)

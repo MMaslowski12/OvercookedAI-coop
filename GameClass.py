@@ -18,6 +18,7 @@ class Game:
         self.FPS = 60
         self.debug = debug
         self.visual_debug = visual_debug
+        self.action_count = 0
             
         self.start_time = pygame.time.get_ticks()
     
@@ -31,6 +32,8 @@ class Game:
         running = True
         self.tick = 0
         start_time = time.time()
+        self.last_rewards = self.Board.get_rewards()
+        
         while running:
             if not self.learning or self.visual_debug:
                 for event in pygame.event.get():
@@ -57,8 +60,16 @@ class Game:
             if (self.tick % self.action_rate == 0):
                 #Update the actions only once per action_rate. See player's update()
                 update_actions = True
-
+                self.action_count += 1
+                
             self.Board.update(update_actions=update_actions)
+            
+            if (self.tick + 1) % (20*60) == 0: #If the Game is stuck for 20 seconds, terminate it
+                rewards = self.Board.get_rewards()
+                if rewards == self.last_rewards:
+                    running = False 
+                    
+                self.last_rewards = rewards
                                 
             if (self.tick + 1 == self.tick_length):
                 self.Board.game_over()
@@ -66,9 +77,6 @@ class Game:
                     running = False
             
             self.tick += 1
-            if (self.tick % 100 == 0):
-                end_time = time.time()
-                start_time = time.time()
                 
         pygame.display.quit()
         pygame.quit()

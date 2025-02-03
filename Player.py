@@ -126,14 +126,10 @@ class Player(Object):
             self.chopping = None
             if self._check_collision(NonPassables, Players):
                 moved = False
-            
-        unmoved_penalty = 0
-        if not moved:
-            unmoved_penalty += 10
-
+                
         if kwargs["update_actions"] and self.misha_playing and self.Agent.learning:
             self.board.draw()
-            reward = self.board.get_rewards() - initial_rewards - unmoved_penalty
+            reward = self.board.get_rewards() - initial_rewards
             assert(self.former_visual_state is not None)
             assert(self.former_numerical_state is not None)
             assert(self.former_action_idx is not None)

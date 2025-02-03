@@ -46,19 +46,28 @@ class Agent:
         else:
             self.model = tf.keras.models.load_model(save_file)
             
-        self.eps_tick = 0
         self.learning = learning
+        self.eps_ticks = 0
         
         if learning:
             self.optimizer = tf.keras.optimizers.Adam()
             self.buffer = Buffer(tfrecord_file="data"+str(player_number)+".tfrecord")
+            
+            # Enable mixed precision training
+            policy = tf.keras.mixed_precision.Policy('mixed_float16')
+            tf.keras.mixed_precision.set_global_policy(policy)
+            
             self.save_file = save_file 
             self.gamma = 0.95 ** (10/60) #Action rate is 10, FPS is 60. 95% of the value after 1 second.
         
-    def get_eps(self):
-        self.eps_tick += 1
-        return 0.1 + 0.9 * np.exp(-1e-6 * self.eps_tick) #CHANGE THIS LATER ON 
     
+    def get_eps(self):
+        assert(self.learning)
+        k = -np.log((0.2 - 0.1) / 0.9) / 200000 #k is such that eps = 0.2 after 200000 ticks
+        eps = 0.1 + 0.9 * np.exp(-k * self.eps_ticks)
+        self.eps_ticks += 1
+        
+        return eps
     
     def get_qs(self, state, random_exploration = False):
         if random_exploration:
@@ -93,6 +102,7 @@ class Agent:
         return loss
     
     def train_on_moves(self, epochs = 3):
+        print("Training on moves")
         losses = []
         time_per_dataset = 0
         for _ in range (epochs):

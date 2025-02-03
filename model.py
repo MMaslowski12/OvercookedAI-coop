@@ -4,11 +4,11 @@ import tensorflow as tf
 print(tf.__version__)
 
 def initialize_model(player_number):
-    image_input = Input(shape=(108, 144, 3))
+    image_input = Input(shape=(72, 96, 3))
     #This defins the network through which the visual input (the screenshot of the board) will go through before joining other input\\
     x = Conv2D(32, (3, 3), activation='relu')(image_input)
     x = BatchNormalization()(x)
-    x = MaxPooling2D(3, 3)(x)
+    x = MaxPooling2D(2, 2)(x)
     x = Conv2D(32, (3, 3), activation='relu')(x)
     x = BatchNormalization()(x)
     x = MaxPooling2D(3, 3)(x)

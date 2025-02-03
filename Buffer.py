@@ -2,7 +2,7 @@ import tensorflow as tf
 import os
 
 class Buffer():
-    def __init__(self, tfrecord_file, buffer_size = 100000, batch_size=64, visual_state_dims=(108, 144, 3), numerical_state_dims = 28, action_idx_dims=1, y_target_dims=1):#64, 1e5
+    def __init__(self, tfrecord_file, buffer_size = 100000, batch_size=64, visual_state_dims=(72, 96, 3), numerical_state_dims = 28, action_idx_dims=1, y_target_dims=1):#64, 1e5
         self.tfrecord_file = tfrecord_file
         self.tfrecord_writer = tf.io.TFRecordWriter(tfrecord_file)  # Initialize TFRecord writer
         self.reset()

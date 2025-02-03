@@ -11,8 +11,8 @@ def generate_q_value_heatmap(player=1, normalized=True):
         player: 1 for Player1, 2 for Player2
     Returns a numpy array of Q-values corresponding to floor positions.
     """
-    Misha = Agent(learning=False, save_file="Misha.keras") 
-    GameObj = Game(misha_playing=True, tick_length=1000, agent = Misha, debug = True, visual_debug = True)
+    Misha = Agent(learning=False, save_file="Misha"+str(player)+".keras") 
+    GameObj = Game(misha_playing=True, tick_length=1000, models = [Misha, Misha], learning = False, debug = True, visual_debug = True)
 
     # Get player object based on parameter
     player_obj = GameObj.Board.Player1 if player == 1 else GameObj.Board.Player2
@@ -74,8 +74,9 @@ def generate_q_value_heatmap(player=1, normalized=True):
     return heatmap, GameObj.Board, mean, std
 
 print("xd?")
+player = 2
 # Generate heatmap for Player1 by default
-heatmap, board, mean, std = generate_q_value_heatmap(player=1, normalized=False)
+heatmap, board, mean, std = generate_q_value_heatmap(player, normalized=False)
 
 def display_heatmap(heatmap, board):
     # Create a surface for the heatmap
@@ -128,9 +129,14 @@ def display_heatmap(heatmap, board):
                 screen.blit(text, text_rect)
                 
     # Create legend
-    legend_surface = pygame.Surface((150, 80), pygame.SRCALPHA)
+    legend_surface = pygame.Surface((150, 100), pygame.SRCALPHA)  # Made taller to fit numbers
     pygame.draw.rect(legend_surface, (0, 0, 0, 180), legend_surface.get_rect())
     
+    # Add min/max values
+    min_val_text = font.render(f"{min_val:.2f}", True, (255, 255, 255))
+    max_val_text = font.render(f"{max_val:.2f}", True, (255, 255, 255))
+    legend_surface.blit(min_val_text, (5, 75))  # Below "Low"
+    legend_surface.blit(max_val_text, (85, 75))  # Below "High"
     # Create gradient rectangle with exponential scaling
     gradient_rect = pygame.Surface((100, 20))
     for x in range(100):

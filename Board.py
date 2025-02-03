@@ -89,10 +89,16 @@ class Board:
         visual_data = visual_data / 255. #Normalize pixels from 0 to 1 for easier training
         visual_data = np.expand_dims(visual_data, axis=0)
         
-        visual_data_tensor = tf.convert_to_tensor(visual_data, dtype=tf.float32)
+        visual_data_tensor = tf.convert_to_tensor(visual_data, dtype=tf.float16)
         
-        new_size = (108, 144)
-        return tf.image.resize(visual_data_tensor, new_size, method='bilinear')
+        new_size = (72, 96)
+        returned_image = tf.image.resize(visual_data_tensor, new_size, method='bilinear')
+        
+        # import matplotlib.pyplot as plt
+        # plt.imshow(returned_image[0])
+        # plt.show() # Debug visualization
+        
+        return returned_image
     
     def _get_numerical_data(self):
         numerical_data = self.Menu.get_state()
@@ -109,6 +115,7 @@ class Board:
         - numerical_data, containing in respective order:
             - the state of the Menu (see: Menu.get_state())
             - the state of Player 1's and Player 2's hands (see: Player.get_state())
+            - the coordinates of the Players (see: Player.get_state())
         
         '''
         
