@@ -4,6 +4,7 @@ from Player import Player1, Player2
 import numpy as np
 import pygame
 import tensorflow as tf
+import time
 
 class Board:
     def __init__(self, map_generator, models=[None, None]):
@@ -69,13 +70,19 @@ class Board:
     
     def update(self, update_actions=False):
         if not self.is_game_over:
+            start_time = time.time()
             self.Interactables.update()
+            time1 = time.time() - start_time
+            start_time = time.time()
             self.Players.update(update_actions=update_actions, state=None if not update_actions else self.get_state()) #Giving the state here to avoid getting the state multiple times. Only give when update is needed
+            time2 = time.time() - start_time
+            start_time = time.time()
             self.Menu.update()
+            time3 = time.time() - start_time
+            start_time = time.time()
             self.draw()
-            #Players.push_experience_to_buffer()
-            #Either get the agents here -> ugly, but it works
-            #Or draw it immediately? And redraw the board multiple times
+            time4 = time.time() - start_time
+            return time1, time2, time3, time4
         
         else:
             self._draw_game_over()

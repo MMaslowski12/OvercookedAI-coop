@@ -19,6 +19,7 @@ class Game:
         self.debug = debug
         self.visual_debug = visual_debug
         self.action_count = 0
+        self.parallelizable_time = 0
             
         self.start_time = pygame.time.get_ticks()
     
@@ -33,6 +34,12 @@ class Game:
         self.tick = 0
         start_time = time.time()
         self.last_rewards = self.Board.get_rewards()
+        time_actions = 0
+        time1_total = 0
+        time2_total = 0
+        time3_total = 0
+        time4_total = 0
+         
         
         while running:
             if not self.learning or self.visual_debug:
@@ -61,10 +68,16 @@ class Game:
                 #Update the actions only once per action_rate. See player's update()
                 update_actions = True
                 self.action_count += 1
-                
-            self.Board.update(update_actions=update_actions)
             
-            if (self.tick + 1) % (20*60) == 0: #If the Game is stuck for 20 seconds, terminate it
+            start_time = time.time()
+            time1, time2, time3, time4 = self.Board.update(update_actions=update_actions)
+            time_actions += time.time() - start_time
+            time1_total += time1
+            time2_total += time2
+            time3_total += time3
+            time4_total += time4
+            
+            if (self.tick + 1) % (10*60) == 0: #If the Game is stuck for 10 seconds, terminate it
                 rewards = self.Board.get_rewards()
                 if rewards == self.last_rewards:
                     running = False 
@@ -77,7 +90,20 @@ class Game:
                     running = False
             
             self.tick += 1
-                
+        
+        
+        # print("TIMES:")
+        # print(f"Time adding experiences: {self.Board.Player1.time_adding_experience}, {self.Board.Player2.time_adding_experience}, "
+        #       f"{self.Board.Player1.time_adding_experience + self.Board.Player2.time_adding_experience}")
+        # print(f"Time drawing: {self.Board.Player1.time_drawing}, {self.Board.Player2.time_drawing}, "
+        #       f"{self.Board.Player1.time_drawing + self.Board.Player2.time_drawing}")
+        # print(f"Players logging memories: {self.Board.Player1.time_saving}, {self.Board.Player2.time_saving}, "
+        #       f"{self.Board.Player1.time_saving + self.Board.Player2.time_saving}")
+        # print(f"Player action deciding: {self.Board.Player1.time_actions}, {self.Board.Player2.time_actions}, "
+        #       f"{self.Board.Player1.time_actions + self.Board.Player2.time_actions}")
+        # print(f"Players: {time2_total}")
+        # print(f"Total time for actions: {time_actions}")
+              
         pygame.display.quit()
         pygame.quit()
             

@@ -48,6 +48,8 @@ class Agent:
             
         self.learning = learning
         self.eps_ticks = 0
+        self.parallelizable_time = 0
+        self.debug_training_losses = []
         
         if learning:
             self.optimizer = tf.keras.optimizers.Adam()
@@ -70,6 +72,7 @@ class Agent:
         return eps
     
     def get_qs(self, state, random_exploration = False):
+        start_time = time.time()
         if random_exploration:
             is_random = random() < self.get_eps()
             if is_random:
@@ -78,18 +81,22 @@ class Agent:
             
         q_values = self.model.predict(state)
         q_values = q_values[0] #Get rid of the batch_size dimension: goes from (1, 5) to (5,) 
-          
+        self.parallelizable_time += time.time() - start_time
+        
         return q_values
     
-    def add_experience_to_memory(self, visual_state, numerical_state, action_idx, future_state, reward):  
+    def add_experience_to_memory(self, visual_state, numerical_state, action_idx, future_qs, reward):  
+        start_time = time.time()
         action_idx = np.array([action_idx])
         
-        y_target = np.float32([reward + np.max(self.model(future_state)) * self.gamma]) #[] so that its not just a scalar
+        start_time = time.time()
+        y_target = np.float32([reward + np.max(future_qs) * self.gamma]) #[] so that its not just a scalar
         self.buffer.add_experience_to_memory(visual_state, numerical_state, action_idx, y_target)
+        self.parallelizable_time += time.time() - start_time
         
         self.former_visual_state = None
         self.former_numerical_state = None
-        self.former_action_idx = None        
+        self.former_action_idx = None      
    
     def loss(self, qs, action, y_target):
         #gather the qs of actions that were taken by the bot
@@ -99,6 +106,10 @@ class Agent:
         square_losses = tf.square(y_target - q_values_of_actions)
         # logging.debug(f"losses: {square_losses}")
         loss = tf.reduce_mean(square_losses)
+        # Store loss value in array for later saving
+        if not hasattr(self, 'training_losses'):
+            self.training_losses = []
+        self.debug_training_losses.append(float(loss))
         return loss
     
     def train_on_moves(self, epochs = 3):
@@ -139,10 +150,31 @@ class Agent:
                 loss_value_test = self.loss(q_preds_test, action_idx_batch, y_target_batch)
                 
             losses.append(sum(losses_in_epoch)/len(losses_in_epoch))
+            
+        # Save a versioned copy of the model
+        if self.save_file:
+            base_name = self.save_file.replace('.keras', '')
+            # Find next available version number
+            version = 1
+            while os.path.exists(f"{base_name}_v{version}.keras"):
+                version += 1
+            versioned_save_file = f"{base_name}_v{version}.keras"
+            self.model.save(versioned_save_file)
+            
+            # Save legacy version
+            legacy_file = f"{base_name}_legacy.keras"
+            if os.path.exists(legacy_file):
+                # If legacy exists, update it
+                os.remove(legacy_file)
+            self.model.save(legacy_file)
         
         save_file = self.save_file if self.save_file != None else "Misha.keras"
         self.model.save(save_file)
         self.buffer.reset()
+        # Save losses to logs directory
+        if not os.path.exists('logs'):
+            os.makedirs('logs')
+        np.save(f'logs/full_losses_list_player{self.player_number}.npy', losses)
 
                 
         return losses, time_per_dataset

@@ -31,7 +31,11 @@ class Player(Object):
         self.HAND_LENGTH = Player.HAND_LENGTH
         self.action_cooldown = 0
         self.Agent = agent
+        self.time_actions = 0
         self.misha_playing = misha_playing
+        self.time_saving = 0
+        self.time_drawing = 0
+        self.time_adding_experience = 0
         if self.Agent is not None and self.Agent.learning:
             self.rewards = 0
         
@@ -103,8 +107,10 @@ class Player(Object):
         initial_rewards = self.board.get_rewards()     
         self.action_cooldown -= 1
         if kwargs["update_actions"]:
+            start_time = time.time()
             keys = self.get_actions(state=kwargs["state"])
             self.keys = keys
+            self.time_actions += time.time() - start_time
         
         keys = self.keys
             
@@ -128,13 +134,21 @@ class Player(Object):
                 moved = False
                 
         if kwargs["update_actions"] and self.misha_playing and self.Agent.learning:
+            start_time = time.time()
             self.board.draw()
+            self.time_drawing += time.time() - start_time
             reward = self.board.get_rewards() - initial_rewards
-            assert(self.former_visual_state is not None)
-            assert(self.former_numerical_state is not None)
-            assert(self.former_action_idx is not None)
-            self.Agent.add_experience_to_memory(visual_state = self.former_visual_state, numerical_state = self.former_numerical_state, action_idx = self.former_action_idx, future_state = self.board.get_state(), reward = reward)
-                
+            start_time2 = time.time()
+            future_state = self.board.get_state()
+            future_qs = self.Agent.get_qs(future_state, random_exploration=False)
+            if not self.action_possible():
+                future_qs = future_qs[:-1]  # Remove the last Q-value if action not possible
+            start_time3 = time.time()
+            self.Agent.add_experience_to_memory(visual_state = self.former_visual_state, numerical_state = self.former_numerical_state, action_idx = self.former_action_idx, future_qs = future_qs, reward = reward)
+            self.time_adding_experience += time.time() - start_time2
+            self.time_adding_experience_itself = time.time() - start_time3
+            self.time_saving += time.time() - start_time
+            
     #Get back to the former position if you collided with a wall or a player
     def _bounce_back(self):
         self.rect.x, self.rect.y = self.rect.x - self.last_move[0], self.rect.y - self.last_move[1]
