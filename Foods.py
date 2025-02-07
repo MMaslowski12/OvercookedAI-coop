@@ -121,6 +121,7 @@ class Dish(pygame.sprite.Sprite):
 
 class MenuClass():
     def __init__(self):
+        pygame.font.init()  # Initialize the font module
         self.queue = []
         self.max_dishes = 4
         self.frequency = 10 #Once every X seconds on average, there will be a new dish

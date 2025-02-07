@@ -238,7 +238,7 @@ class CBoard(CounterTop):
         if(self.chopper != None):
             if(self.chopper.chopping == self):
                 self.chop()
-            
+                        
         if (not self.chopping):
             return None
         
@@ -272,6 +272,7 @@ class Fryer(CounterTop):
             
             if execute:
                 self.frying = True
+                self.frier = player
             
             return True
         return False
@@ -304,6 +305,8 @@ class Fryer(CounterTop):
         condition = condition and self.resource.fried
         if condition and execute:
             self.resource.progress = 0
+            self.frying = False
+            self.frier = None
             super().remove_resource(player, execute)
         
         return condition
@@ -316,7 +319,7 @@ class Fryer(CounterTop):
                 self.resource.progress = 0
                 self.frying = False
                 self.resource.fry()
-            
+                        
         if (not self.frying):
             return None
 

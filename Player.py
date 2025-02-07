@@ -23,6 +23,17 @@ Test the learning
 class Player(Object):
     HAND_LENGTH = 1620 #roughly (32*sqrt(2) - 5)^2
     def __init__(self, position, graphic, controls, board, agent=None, misha_playing=False):
+        """
+        Initialize a Player.
+
+        Args:
+            position (tuple): The starting (x, y) position of the player.
+            graphic: The graphic/sprite for the player.
+            controls (dict): Dictionary mapping actions to pygame keys.
+            board: The game board that the player exists on.
+            agent: The learning agent (if any) controlling the player.
+            misha_playing (bool): Flag to indicate if the agent is controlling the player.
+        """
         super().__init__(position, graphic=graphic, board=board)
         self.controls = controls
         self.hands = None
@@ -36,13 +47,26 @@ class Player(Object):
         self.time_saving = 0
         self.time_drawing = 0
         self.time_adding_experience = 0
-        if self.Agent is not None and self.Agent.learning:
-            self.rewards = 0
         
     def is_player(self):
+        """
+        Check if this object is a player.
+
+        Returns:
+            bool: Always True for players.
+        """
         return True
     
     def action_possible(self): #Thats ugly but oh well
+        """
+        Checks available actions based on proximity to interactable objects.
+
+        Iterates through the board's interactables; if an interactable is close enough 
+        and its available action returns True when checked, that action is considered possible.
+
+        Returns:
+            function or None: The first available action function or None if no action is possible.
+        """
         Interactables = self.board.Interactables
         for interactable in Interactables: #How do I get the Interactables? Either pass it as an argument or add it to the initialization. I mean somewhere else I ask to get nonpassables
             if (self.check_distance(interactable) < self.HAND_LENGTH):
@@ -54,6 +78,24 @@ class Player(Object):
         return None
         
     def _move(self, keys):
+        """
+        Move the player based on the current key inputs.
+
+        This method uses the movement keys from self.controls to adjust the player's position.
+        After moving, it checks for collision with non-passable objects or other players, 
+        and if a collision is detected, it reverts the movement.
+
+        Args:
+            keys (dict): Pygame key state dictionary.
+
+        Returns:
+            bool: True if the player moved, False otherwise.
+        """
+        NonPassables = self.board.NonPassables
+        Players = self.board.Players
+        prex, prey = self.rect.x, self.rect.y 
+
+        moved = False
         dxdys = {"UP": (0, -1),
                 "DOWN": (0, 1),
                 "LEFT": (-1, 0),
@@ -66,28 +108,66 @@ class Player(Object):
                 dx, dy = dxdys[direction]
                 self.rect.x += dx * self.speed
                 self.rect.y += dy * self.speed
+        
+        self.last_move = (self.rect.x - prex, self.rect.y - prey)
+        if(moved):
+            self.chopping = None
+            if self._check_collision(NonPassables, Players):
+                moved = False
                 
         return moved
     
-    def qs2actions(self, qs):
-        qs_idx = qs.argmax() #Get the action from player 1 that maximizes the q value",
+    def _get_mask(self):
+        """
+        Create an action mask based on available interactions.
+
+        If an action is possible, the mask remains all ones. Otherwise, the mask disables the
+        action corresponding to index 4 (last element).
+
+        Returns:
+            list: A mask list of 5 binary values.
+        """
+        if self.action_possible():
+            mask = [1, 1, 1, 1, 1]
+            
+        else:
+            mask = [1, 1, 1, 1, 0]
         
-        if (qs_idx == 4 and (not self.action_possible())):
-            qs_idx = qs[0:4].argmax() #Get the 2nd best action if an action is the best one and isn't possible",
-        
+        return mask
+    
+    def idx2actions(self, idx):         
+        """
+        Convert an action index into a dictionary mapping pygame keys to booleans.
+
+        Args:
+            idx (int): The index corresponding to the key in self.controls.
+
+        Returns:
+            dict: Dictionary where only the key corresponding to the idx is set to True.
+        """
         keys = [key for key in dir(pygame) if key.startswith('K_')]
         actions = {getattr(pygame, key): False for key in keys}
         
-        actions[list(self.controls.values())[qs_idx]] = True
+        actions[list(self.controls.values())[idx]] = True
         
-        return qs_idx, actions
+        return actions
     
     def get_actions(self, state):
+        """
+        Determine the player's actions based on control mode.
+
+        If controlled by an agent (misha_playing is True), query the agent's model.
+        Otherwise, return the current pygame keys states.
+
+        Args:
+            state: The current state used by the agent for evaluation.
+
+        Returns:
+            dict or pygame key array: The action dictionary generated from agent or key inputs.
+        """
         if (self.misha_playing):    
-            qs = self.Agent.get_qs(state, random_exploration=self.Agent.learning)    
-            qs_idx, actions = self.qs2actions(qs)
-            if self.Agent.learning:
-                self.remember_actions(state, qs_idx)
+            _, idx = self.Agent.get_qs(state=state, mask=self._get_mask(), random_exploration=self.Agent.learning)    
+            actions = self.idx2actions(idx)
         
         else:
             actions = pygame.key.get_pressed()
@@ -96,65 +176,96 @@ class Player(Object):
         
         return actions
     
-    def remember_actions(self, state, action_idx):
-        self.former_visual_state = np.array(state[0][0])
-        # logging.debug(f"former_visual_state shape: {self.former_visual_state.shape}")
-        self.former_numerical_state = np.array(state[1][0])
-        # logging.debug(f"former_numerical_state shape: {self.former_numerical_state.shape}")
-        self.former_action_idx = np.array(action_idx)
-    
     def update(self, **kwargs): 
+        """
+        Update the player's state for the current frame.
+
+        Decrease the action cooldown, check for action key press, trigger interactions if applicable,
+        and move the player based on input keys.
+
+        Args:
+            **kwargs: Expected to contain 'keys' for current key states.
+        """
         initial_rewards = self.board.get_rewards()     
         self.action_cooldown -= 1
-        if kwargs["update_actions"]:
-            start_time = time.time()
-            keys = self.get_actions(state=kwargs["state"])
-            self.keys = keys
-            self.time_actions += time.time() - start_time
         
-        keys = self.keys
-            
-        NonPassables = self.board.NonPassables
-        Players = self.board.Players
-        
+        keys = kwargs["keys"]
         if (keys[self.controls['ACTION']] & (self.action_cooldown <= 0)):
             self.chopping = None
             action = self.action_possible()
-            if(action is not None):
+            if action is not None:
                 action(self, execute=True)
                 self.action_cooldown = 20
                 return 0 
-
-        prex, prey = self.rect.x, self.rect.y 
-        moved = self._move(keys)
-        self.last_move = (self.rect.x - prex, self.rect.y - prey)
-        if(moved):
-            self.chopping = None
-            if self._check_collision(NonPassables, Players):
-                moved = False
                 
-        if kwargs["update_actions"] and self.misha_playing and self.Agent.learning:
-            start_time = time.time()
-            self.board.draw()
-            self.time_drawing += time.time() - start_time
-            reward = self.board.get_rewards() - initial_rewards
-            start_time2 = time.time()
-            future_state = self.board.get_state()
-            future_qs = self.Agent.get_qs(future_state, random_exploration=False)
-            if not self.action_possible():
-                future_qs = future_qs[:-1]  # Remove the last Q-value if action not possible
-            start_time3 = time.time()
-            self.Agent.add_experience_to_memory(visual_state = self.former_visual_state, numerical_state = self.former_numerical_state, action_idx = self.former_action_idx, future_qs = future_qs, reward = reward)
-            self.time_adding_experience += time.time() - start_time2
-            self.time_adding_experience_itself = time.time() - start_time3
-            self.time_saving += time.time() - start_time
-            
+        self._move(keys)
+        
+    def remember_state_and_action(self, state, action_idx):
+        """
+        Stores the current state and the action index taken, 
+        for later use in training the agent.
+
+        Args:
+            state: The current state representation.
+            action_idx (int): The index of the action taken.
+        """
+        # logging.debug(f"former_visual_state shape: {self.former_visual_state.shape}")
+        # logging.debug(f"former_numerical_state shape: {self.former_numerical_state.shape}")
+        self.remembered_state = state
+        self.remembered_action = action_idx
+        
+    def _reset_memory(self):
+        """
+        Reset the stored state and action memory.
+        """
+        self.remembered_state = None
+        self.remembered_action = None
+        
+    def add_experience_to_batch(self, future_state, rewards):
+        """
+        Add the recent experience to the agent's batch memory.
+
+        Combines the current remembered state and action with the future state and obtained rewards,
+        and then delegates storing the experience to the agent's method.
+
+        Args:
+            future_state: The state after the current action.
+            rewards (float): The rewards obtained from the transition.
+        """
+        state = self.remembered_state
+        action = self.remembered_action
+        future_mask = self._get_mask()
+        #The state
+        #The rewards
+        #The action
+        #The future state
+        #The future mask
+        
+        self.Agent.add_experience_to_batch(state, rewards, action, future_state, future_mask)
+        self._reset_memory()
+        
+                    
     #Get back to the former position if you collided with a wall or a player
     def _bounce_back(self):
+        """
+        Revert the player's position to its previous location upon collision.
+        """
         self.rect.x, self.rect.y = self.rect.x - self.last_move[0], self.rect.y - self.last_move[1]
         
     #Check for collisions with Walls and the other players
     def _check_collision(self, NonPassables, Players):
+        """
+        Check for collisions with non-passable objects and other players.
+
+        If a collision is detected, the player is bounced back to its previous position.
+
+        Args:
+            NonPassables: A collection of objects that the player cannot pass through.
+            Players: A collection of other player objects.
+
+        Returns:
+            bool: True if a collision occurred, False otherwise.
+        """
         collisions = pygame.sprite.spritecollide(self, NonPassables, False)
         if(collisions):
             self._bounce_back()
@@ -173,20 +284,19 @@ class Player(Object):
         return False
         
     def get_state(self):
-        '''
-        Returns a list of:
-        - coordinates of the Player:
-            - 0: x coordinates of the Player
-            - 1: y coordinates of the Player
-        - 7 binary values describing Player's inventory. In respective order, these are values for whether the following is in Player's hands:
-            - 2: Plate
-            - 3: Raw Fish
-            - 4: Cut Fish
-            - 5: Fried Fish
-            - 6: Raw Potato
-            - 7: Cut Potato
-            - 8: Fried Potato
-        '''
+        """
+        Return a numerical representation of the player's current state.
+
+        The state consists of:
+        - The player's x and y coordinates.
+        - 7 binary values representing the player's inventory. They indicate if the player is holding:
+          - Plate (if so, also include fish and potato counts in dish_dict)
+          - Raw Fish or Cut Fish or Fried Fish
+          - Raw Potato or Cut Potato or Fried Potato
+        
+        Returns:
+            List[float]: The player's state.
+        """
         
         numerical_data = [0]*9
         numerical_data[0] = self.rect.x
@@ -225,6 +335,15 @@ class Player(Object):
         
 class Player1(Player):
     def __init__(self, position, board, agent=None, misha_playing=False):
+        """
+        Initialize Player1 with a specific control scheme.
+
+        Args:
+            position (tuple): Starting (x, y) position.
+            board: The game board.
+            agent: The learning agent (if any).
+            misha_playing (bool): Whether the agent is controlling the player.
+        """
         player1_controls = {
             "UP": pygame.K_w,
             "DOWN": pygame.K_s,
@@ -237,6 +356,15 @@ class Player1(Player):
         
 class Player2(Player):
     def __init__(self, position, board, agent=None, misha_playing=False):
+        """
+        Initialize Player2 with a specific control scheme.
+
+        Args:
+            position (tuple): Starting (x, y) position.
+            board: The game board.
+            agent: The learning agent (if any).
+            misha_playing (bool): Whether the agent is controlling the player.
+        """
         player2_controls = {
             "UP": pygame.K_UP,
             "DOWN": pygame.K_DOWN,

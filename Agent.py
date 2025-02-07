@@ -1,6 +1,7 @@
 import numpy as np
 from random import random
 import tensorflow as tf
+from tqdm import tqdm
 from Buffer import Buffer
 from model import initialize_model
 import logging
@@ -51,9 +52,19 @@ class Agent:
         self.parallelizable_time = 0
         self.debug_training_losses = []
         
+        self.evaluated_batch = []
+        self.evaluated_mask = []
+        
+        self.experience_state_batch = []
+        self.experience_rewards_batch = []
+        self.experience_action_batch = []
+        self.experience_future_state_batch = []
+        self.experience_future_mask_batch = []
+        
+        
         if learning:
             self.optimizer = tf.keras.optimizers.Adam()
-            self.buffer = Buffer(tfrecord_file="data"+str(player_number)+".tfrecord")
+            self.buffer = Buffer()
             
             # Enable mixed precision training
             policy = tf.keras.mixed_precision.Policy('mixed_float16')
@@ -71,32 +82,56 @@ class Agent:
         
         return eps
     
-    def get_qs(self, state, random_exploration = False):
-        start_time = time.time()
+    @tf.function(reduce_retracing=True)
+    def get_qs_and_idxs(self, state=None, mask=None, batch_size=1, random_exploration = False):
+        assert len(state) == batch_size, f"Expected first dimension of states to be {batch_size}, but got {state.shape}"
+        
         if random_exploration:
             is_random = random() < self.get_eps()
             if is_random:
-                randomized_q_values = np.random.rand(5)
-                return randomized_q_values
-            
-        q_values = self.model.predict(state)
-        q_values = q_values[0] #Get rid of the batch_size dimension: goes from (1, 5) to (5,) 
-        self.parallelizable_time += time.time() - start_time
+                randomized_q_values = tf.random.uniform((batch_size, 5))
+                q_values_idxs = tf.argmax(randomized_q_values, axis=1)
+                return randomized_q_values, q_values_idxs
         
-        return q_values
+        # Convert list of [visual_state, numerical_state] pairs into batched tensors
+        visual_states = tf.stack([s[0] for s in state])
+        numerical_states = tf.stack([s[1] for s in state])
+        
+        # Create list of inputs expected by model
+        model_inputs = [visual_states, numerical_states]
+        q_values = self.model(model_inputs)
+        q_values_masked = q_values * mask
+        
+        q_values_idxs = tf.argmax(q_values_masked, axis=1)
+        
+        if state is None:
+            self.evaluated_batch = []
+            self.evaluated_mask = []
+        
+        return q_values_masked, q_values_idxs
     
-    def add_experience_to_memory(self, visual_state, numerical_state, action_idx, future_qs, reward):  
-        start_time = time.time()
-        action_idx = np.array([action_idx])
+    def add_experience_to_batch(self, state, rewards, action, future_state, future_mask):  
+        self.experience_state_batch.append(state)
+        self.experience_rewards_batch.append(rewards)
+        self.experience_action_batch.append(action)
+        self.experience_future_state_batch.append(future_state)
+        self.experience_future_mask_batch.append(future_mask)
+        #Accumulate the states
+    
+    def _reset_experiences(self):
+        self.experience_state_batch = []
+        self.experience_rewards_batch = []
+        self.experience_action_batch = []
+        self.experience_future_state_batch = []
+        self.experience_future_mask_batch = []
         
-        start_time = time.time()
-        y_target = np.float32([reward + np.max(future_qs) * self.gamma]) #[] so that its not just a scalar
-        self.buffer.add_experience_to_memory(visual_state, numerical_state, action_idx, y_target)
-        self.parallelizable_time += time.time() - start_time
+    def add_batch_to_memory(self):
+        future_qs = self.get_qs_and_idxs(self.experience_future_state_batch, self.experience_future_mask_batch, batch_size=len(self.experience_future_state_batch))[0]
+        max_future_qs = tf.reduce_max(future_qs, axis=1)
+        y_target = np.array(self.experience_rewards_batch) + self.gamma * max_future_qs
         
-        self.former_visual_state = None
-        self.former_numerical_state = None
-        self.former_action_idx = None      
+        self.buffer.add_batch_to_memory(self.experience_state_batch, self.experience_action_batch, y_target)
+        self._reset_experiences()
    
     def loss(self, qs, action, y_target):
         #gather the qs of actions that were taken by the bot
@@ -104,26 +139,24 @@ class Agent:
         # logging.debug(f"q_values of actions: {q_values_of_actions[10]}")
                 
         square_losses = tf.square(y_target - q_values_of_actions)
-        # logging.debug(f"losses: {square_losses}")
+        # logging.debug(f"losses: {square_losses[0]}")
         loss = tf.reduce_mean(square_losses)
         # Store loss value in array for later saving
         if not hasattr(self, 'training_losses'):
             self.training_losses = []
         self.debug_training_losses.append(float(loss))
+        
         return loss
     
     def train_on_moves(self, epochs = 3):
-        print("Training on moves")
         losses = []
         time_per_dataset = 0
-        for _ in range (epochs):
-            start_time_epoch = time.time()
+        for epoch in range (epochs):
+            tf.print(f"Epoch #{epoch}")
             dataset = self.buffer.create_dataset()
-            end_time_epoch = time.time()
-            time_per_dataset += end_time_epoch - start_time_epoch
             
             losses_in_epoch = []
-            for batch in dataset:    
+            for batch in tqdm(dataset, desc=f"Epoch {epoch+1}/{epochs}", colour='green'):   
                 visual_state = batch["visual_state"]
                 numerical_state = batch["numerical_state"]
                 action_idx_batch = batch["action_idx"]
@@ -136,18 +169,17 @@ class Agent:
                 with tf.GradientTape() as tape:
                     q_preds = self.model([visual_state, numerical_state])
                     loss_value = self.loss(q_preds, action_idx_batch, y_target_batch)
-                    # logging.debug(f"random q_predicts: {q_preds}")
-                    # logging.debug(f"random action_idx: {action_idx_batch}")
-                    # logging.debug(f"random y_targets: {y_target_batch}")
-                    # logging.debug(f"loss_value: {loss_value}")                    
+                    # Use tf operations to get sample values
+                    # Print sample values for debugging
+                    # tf.print("\nSample values from batch:")
+                    # tf.print("Q predictions (first row):", q_preds[0])
+                    # tf.print("Action index (first element):", action_idx_batch[0])
+                    # tf.print("Y target (first element):", y_target_batch[0])
 
                 # Calculate gradients and apply
                 gradients = tape.gradient(loss_value, self.model.trainable_variables)
                 self.optimizer.apply_gradients(zip(gradients, self.model.trainable_variables))
                 losses_in_epoch.append(loss_value)
-                
-                q_preds_test = self.model([visual_state, numerical_state])
-                loss_value_test = self.loss(q_preds_test, action_idx_batch, y_target_batch)
                 
             losses.append(sum(losses_in_epoch)/len(losses_in_epoch))
             
@@ -171,11 +203,6 @@ class Agent:
         save_file = self.save_file if self.save_file != None else "Misha.keras"
         self.model.save(save_file)
         self.buffer.reset()
-        # Save losses to logs directory
-        if not os.path.exists('logs'):
-            os.makedirs('logs')
-        np.save(f'logs/full_losses_list_player{self.player_number}.npy', losses)
-
                 
         return losses, time_per_dataset
     

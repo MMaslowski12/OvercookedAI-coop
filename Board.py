@@ -35,6 +35,10 @@ class Board:
         self.Players.add(self.Player1)
         self.Player2 = Player2(coords2px(player2_coords[1], player2_coords[0]), self, models[1], misha_playing=models[1] is not None)
         self.Players.add(self.Player2)
+        
+        self.last_rewards = 0
+        self.keys_for_player1 = None
+        self.keys_for_player2 = None
 
         
     def draw(self):
@@ -68,13 +72,33 @@ class Board:
         #SET GAME_OVER AS TRUE, ADD DRAWING GAME_OVER TO SELF.DRAW()
         self.is_game_over = True
     
-    def update(self, update_actions=False):
+    def update_keys(self, idxs_for_player1, idxs_for_player2):
+        self.keys_for_player1 = self.Player1.idx2actions(idxs_for_player1)
+        self.keys_for_player2 = self.Player2.idx2actions(idxs_for_player2)
+        
+    def add_update_to_batch(self, batch1, batch2):
+        #ALL I NEED IS UPDATE THE AGENTS 
+        state = self.get_state()
+        batch1.states.append(state)
+        batch1.masks.append(self.Player1._get_mask())
+        
+        batch2.states.append(state)
+        batch2.masks.append(self.Player2._get_mask())
+    
+    def ask_for_evaluation(self):
+        self.Player1.get_actions()
+        self.Player2.get_actions()
+    
+    def update(self, update_actions=False): 
         if not self.is_game_over:
             start_time = time.time()
             self.Interactables.update()
             time1 = time.time() - start_time
             start_time = time.time()
-            self.Players.update(update_actions=update_actions, state=None if not update_actions else self.get_state()) #Giving the state here to avoid getting the state multiple times. Only give when update is needed
+            start_rewards = self.get_rewards()
+            self.Player1.update(keys=self.keys_for_player1)
+            self.Player2.update(keys=self.keys_for_player2)
+            
             time2 = time.time() - start_time
             start_time = time.time()
             self.Menu.update()
@@ -86,6 +110,13 @@ class Board:
         
         else:
             self._draw_game_over()
+            
+    def add_experience_to_batch(self):
+        future_state = self.get_state()
+        rewards = self.get_rewards() - self.last_rewards
+        self.last_rewards = rewards + self.last_rewards
+        self.Player1.add_experience_to_batch(future_state, rewards)
+        self.Player2.add_experience_to_batch(future_state, rewards)
     
     def _get_visual_data(self):
         visual_data = pygame.surfarray.array3d(self.screen)
@@ -94,7 +125,7 @@ class Board:
         
         visual_data = visual_data[start_y - self.Menu.height: end_y, start_x:end_x]
         visual_data = visual_data / 255. #Normalize pixels from 0 to 1 for easier training
-        visual_data = np.expand_dims(visual_data, axis=0)
+        # visual_data = np.expand_dims(visual_data, axis=0)
         
         visual_data_tensor = tf.convert_to_tensor(visual_data, dtype=tf.float16)
         
@@ -112,7 +143,7 @@ class Board:
         for Player in self.Players:
             numerical_data.extend(Player.get_state())
             
-        return tf.convert_to_tensor([numerical_data]) #Add a batch dimension
+        return tf.convert_to_tensor(numerical_data) #Add a batch dimension
 
     
     def get_state(self):
@@ -130,7 +161,6 @@ class Board:
         numerical_data = self._get_numerical_data()
         
         return [visual_data, numerical_data]
-    
     
     def _get_ingredient_rewards(self, ingredient, raw_coeff, prep_coeff):
         reward = raw_coeff
@@ -157,12 +187,9 @@ class Board:
         Fried food on the menu - 250 points
         Plate - 500 points
         '''
-        
-        
         raw_coeff = 50
         prep_coeff = 150
         plate_coeff = 50
-        
         '''
         REMEMBER: THERE IS ALSO A PENALTY FOR NOT MOVING WHICH IS HACKED IN THE PLAYER CLASS.
         UNMOVED PENALTY = 10    

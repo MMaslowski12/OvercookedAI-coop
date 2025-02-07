@@ -2,13 +2,13 @@ import tensorflow as tf
 import os
 import numpy as np
 import time
+import logging
 
 class Buffer():
-    def __init__(self, tfrecord_file, buffer_size = 50000, batch_size=64, visual_state_dims=(72, 96, 3), numerical_state_dims = 28, action_idx_dims=1, y_target_dims=1):#64, 1e5
+    def __init__(self, buffer_size = 65536, batch_size=64, visual_state_dims=(72, 96, 3), numerical_state_dims = 28, action_idx_dims=1, y_target_dims=1):#64, 1e5
         # self.tfrecord_file = tfrecord_file
         # self.tfrecord_writer = tf.io.TFRecordWriter(tfrecord_file)  # Initialize TFRecord writer
         # self.reset()
-        
         self.buffer_size = buffer_size 
         self.batch_size = batch_size
         
@@ -41,14 +41,14 @@ class Buffer():
         print(f"Action indices: {action_memory:.2f} MB")
         print(f"Target values: {target_memory:.2f} MB")
         print(f"Total memory: {total_memory:.2f} MB")
+    
+    def reset(self):
+        self.visual_states = np.zeros([self.buffer_size, *self.visual_state_dims], dtype=np.float32)
+        self.numerical_states = np.zeros([self.buffer_size, self.numerical_state_dims], dtype=np.float32)
+        self.action_idxs = np.zeros([self.buffer_size, self.action_idx_dims], dtype=np.int64)
+        self.y_targets = np.zeros([self.buffer_size, self.y_target_dims], dtype=np.float32)
         
-    '''
-    TOTAL OVERWRITE:
-    JUST STORE ALL THE STUFF IN THE LISTS
-    CREATE_DATASET IS JUST SLIGHTLY MODIFIED
-    
-    
-    '''   
+        self.current_index = 0
     
     # def _serialize_example(self, visual_state, numerical_state, action_idx, y_target):
     #     # print("/\n"*2)
@@ -75,17 +75,42 @@ class Buffer():
     #     example_proto = tf.train.Example(features=tf.train.Features(feature=feature))
     #     return example_proto.SerializeToString()
     
-    def add_experience_to_memory(self, visual_state, numerical_state, action_idx, y_target):
-        self.visual_states[self.current_index] = visual_state
-        self.numerical_states[self.current_index] = numerical_state  
-        self.action_idxs[self.current_index] = action_idx
-        self.y_targets[self.current_index] = y_target
+    def add_batch_to_memory(self, states, actions, y_targets):
+        # Handle batch of 64 experiences
+        batch_size = len(states)
+        end_index = self.current_index + batch_size
+        actions = np.array(actions).reshape(-1, 1)
+        y_targets = np.array(y_targets).reshape(-1, 1)
         
-        self.current_index = (self.current_index + 1) % self.buffer_size
+        # Handle wrap-around case
+        if end_index > self.buffer_size:
+            # Split into two parts
+            first_part = self.buffer_size - self.current_index
+            second_part = batch_size - first_part
+            
+            # First part goes from current_index to end of buffer
+            self.visual_states[self.current_index:] = [s[0] for s in states[:first_part]]
+            self.numerical_states[self.current_index:] = [s[1] for s in states[:first_part]]
+            self.action_idxs[self.current_index:] = actions[:first_part]
+            self.y_targets[self.current_index:] = y_targets[:first_part]
+            
+            # Second part wraps to start of buffer
+            self.visual_states[:second_part] = [s[0] for s in states[first_part:]]
+            self.numerical_states[:second_part] = [s[1] for s in states[first_part:]]
+            self.action_idxs[:second_part] = actions[first_part:]
+            self.y_targets[:second_part] = y_targets[first_part:]
+            
+            self.current_index = second_part
+            
+        else:
+            # No wrap-around needed
+            self.visual_states[self.current_index:end_index] = [s[0] for s in states]
+            self.numerical_states[self.current_index:end_index] = [s[1] for s in states]
+            self.action_idxs[self.current_index:end_index] = actions
+            self.y_targets[self.current_index:end_index] = y_targets
+            
+            self.current_index = end_index % self.buffer_size
         
-        
-        # serialized_example = self._serialize_example(visual_state, numerical_state, action_idx, y_target)
-        # self.tfrecord_writer.write(serialized_example)
         
     
     # def _parse_example(self, example):
@@ -104,41 +129,48 @@ class Buffer():
     #     return parsed_example 
     
     def create_dataset(self):
-        self.close_writer()
-        #Get the dataset 
-        # Convert numpy arrays to tensors
-        visual_states_tensor = tf.convert_to_tensor(self.visual_states, dtype=tf.float32)
-        numerical_states_tensor = tf.convert_to_tensor(self.numerical_states, dtype=tf.float32)
-        action_idxs_tensor = tf.convert_to_tensor(self.action_idxs, dtype=tf.int64)
-        y_targets_tensor = tf.convert_to_tensor(self.y_targets, dtype=tf.float32)
-        
-        dataset = tf.data.Dataset.from_tensor_slices((
-            visual_states_tensor,
-            numerical_states_tensor, 
-            action_idxs_tensor,
-            y_targets_tensor
-        ))
-        
-        #for each example, do _parse_example
-        # dataset = dataset.map(self._parse_example, num_parallel_calls=tf.data.AUTOTUNE)
-        
-        #Shuffle the dataset
+        # Use a generator that yields one sample at a time
+        def generator():
+            # When the buffer isn't fully filled,
+            # you might prefer to yield only up to self.current_index.
+            # Otherwise, if you consider the whole buffer as your dataset,
+            # replace num_samples with self.buffer_size.
+            assert(len(self.visual_states) > 0 )
+            assert(len(self.visual_states) == len(self.numerical_states) == len(self.action_idxs) == len(self.y_targets))
+            num_samples = self.current_index if self.current_index > 0 else self.buffer_size
+            for i in range(num_samples):
+                yield {
+                    "visual_state": self.visual_states[i],
+                    "numerical_state": self.numerical_states[i],
+                    "action_idx": self.action_idxs[i],
+                    "y_target": self.y_targets[i]
+                }
+
+        # Define the output signature so TensorFlow knows the shape and dtype for each element.
+        output_signature = {
+            "visual_state": tf.TensorSpec(shape=self.visual_state_dims, dtype=tf.float32),
+            "numerical_state": tf.TensorSpec(shape=(self.numerical_state_dims,), dtype=tf.float32),
+            "action_idx": tf.TensorSpec(shape=(self.action_idx_dims,), dtype=tf.int64),
+            "y_target": tf.TensorSpec(shape=(self.y_target_dims,), dtype=tf.float32)
+        }
+
+        # Build the tf.data.Dataset from the generator.
+        dataset = tf.data.Dataset.from_generator(generator, output_signature=output_signature)
+
+        # Shuffle the data (buffering all samples for good mixing)
         dataset = dataset.shuffle(buffer_size=self.buffer_size)
-        
-        #Batch it
+
+        # Batch the dataset. Entire batches will be evaluated at once.
         dataset = dataset.batch(self.batch_size)
-        
-        #prefetch it
+
+        # Prefetch to overlap the producer (data loading) and consumer (model execution)
         dataset = dataset.prefetch(tf.data.AUTOTUNE)
         
+        # Log the size of the dataset
+        num_samples = self.current_index if self.current_index > 0 else self.buffer_size
+        num_batches = num_samples // self.batch_size
+        logging.debug(f"Created dataset with {num_samples} samples in {num_batches} batches of size {self.batch_size}")
+
         return dataset
         
-    def reset(self):
-        self.tfrecord_writer.close()
-
-        os.remove(self.tfrecord_file) #Reset the buffer
-
-        self.tfrecord_writer = tf.io.TFRecordWriter(self.tfrecord_file)
         
-    def close_writer(self):
-        self.tfrecord_writer.close()

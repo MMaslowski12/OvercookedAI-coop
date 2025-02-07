@@ -62,6 +62,7 @@ def setup_venv(venv_python):
         "matplotlib",
         "jupyter",
         "notebook",
+        "tqdm",
         "ipykernel",
     ]
 

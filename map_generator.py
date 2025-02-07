@@ -128,5 +128,62 @@ def generate_map():
     #Test the code by yoursel
 
 
+def generate_test_map():
+    SIZE = 32
+    ROWS = 12
+    COLS = 18
+    screen_width = 800
+    screen_height = 600
+    
+    START_X, START_Y = (int(screen_width // 2 - 1/2*SIZE*COLS), int(screen_height // 2 - 1/2*SIZE*ROWS))
+    END_X, END_Y = START_X + SIZE*COLS, START_Y + SIZE*ROWS
 
+    '''
+    0: Floor
+    1: Wall
+    2: Countertop
+    3: Fish
+    4: Potato
+    5: Plate
+    6: CBoard
+    7: Fryer
+    8: CBelt
+    9: TrashCan
+    '''
+    
+    obj_types = [Floor, 
+                Wall, 
+                CounterTop,
+                FishCrate,
+                PotatoCrate,
+                PlateCrate,
+                CBoard,
+                Fryer,
+                CBelt,
+                TrashCan]
+    
+    def idx2obj(x):
+        return obj_types[x]
+
+    floor_plan_matrix = [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                        [1, 2, 2, 2, 2, 2, 2, 3, 6, 7, 2, 5, 2, 2, 2, 2, 2, 1],
+                        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8],
+                        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8],
+                        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                        [1, 2, 2, 2, 2, 2, 2, 3, 6, 7, 2, 5, 2, 2, 2, 2, 2, 1],
+                        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8],
+                        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8],
+                        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
+    
+    def coords2px(x, y):
+        return START_X + SIZE/2 + x*SIZE, START_Y+SIZE/2 + y*SIZE
+    
+    player1_coords = (2.2, 7) #0.2 offset so that it doesnt touch the wall
+    player2_coords = (9.2, 7)
+    
+    return floor_plan_matrix, idx2obj, coords2px, (START_X, START_Y, END_X, END_Y), player1_coords, player2_coords
+    
  
