@@ -49,21 +49,17 @@ class Agent:
             
         self.learning = learning
         self.eps_ticks = 0
-        self.parallelizable_time = 0
-        self.debug_training_losses = []
-        
-        self.evaluated_batch = []
-        self.evaluated_mask = []
         
         self.experience_state_batch = []
         self.experience_rewards_batch = []
         self.experience_action_batch = []
         self.experience_future_state_batch = []
         self.experience_future_mask_batch = []
+        self.loss_distribution = []
         
         
         if learning:
-            self.optimizer = tf.keras.optimizers.Adam()
+            self.optimizer = tf.keras.optimizers.Adam(learning_rate=1e-4)
             self.buffer = Buffer()
             
             # Enable mixed precision training
@@ -76,7 +72,7 @@ class Agent:
     
     def get_eps(self):
         assert(self.learning)
-        k = -np.log((0.2 - 0.1) / 0.9) / 200000 #k is such that eps = 0.2 after 200000 ticks
+        k = -np.log((0.2 - 0.1) / 0.9) / 500000 #k is such that eps = 0.2 after 500000 ticks
         eps = 0.1 + 0.9 * np.exp(-k * self.eps_ticks)
         self.eps_ticks += 1
         
@@ -103,10 +99,6 @@ class Agent:
         q_values_masked = q_values * mask
         
         q_values_idxs = tf.argmax(q_values_masked, axis=1)
-        
-        if state is None:
-            self.evaluated_batch = []
-            self.evaluated_mask = []
         
         return q_values_masked, q_values_idxs
     
@@ -144,7 +136,7 @@ class Agent:
         # Store loss value in array for later saving
         if not hasattr(self, 'training_losses'):
             self.training_losses = []
-        self.debug_training_losses.append(float(loss))
+        self.loss_distribution.append(float(loss))
         
         return loss
     
@@ -182,28 +174,21 @@ class Agent:
                 losses_in_epoch.append(loss_value)
                 
             losses.append(sum(losses_in_epoch)/len(losses_in_epoch))
-            
-        # Save a versioned copy of the model
-        if self.save_file:
-            base_name = self.save_file.replace('.keras', '')
-            # Find next available version number
-            version = 1
-            while os.path.exists(f"{base_name}_v{version}.keras"):
-                version += 1
-            versioned_save_file = f"{base_name}_v{version}.keras"
-            self.model.save(versioned_save_file)
-            
-            # Save legacy version
-            legacy_file = f"{base_name}_legacy.keras"
-            if os.path.exists(legacy_file):
-                # If legacy exists, update it
-                os.remove(legacy_file)
-            self.model.save(legacy_file)
         
         save_file = self.save_file if self.save_file != None else "Misha.keras"
+        # Ensure logs directory exists
+        if not os.path.exists('logs'):
+            os.makedirs('logs')
+            
+        # Save loss distribution to file
+        loss_dist_path = os.path.join('logs', 'loss_distribution.npy')
+        np.save(loss_dist_path, np.array(self.loss_distribution))
+        self.loss_distribution = []
         self.model.save(save_file)
         self.buffer.reset()
+        
+        eps = self.get_eps()
                 
-        return losses, time_per_dataset
+        return losses, time_per_dataset, eps
     
     

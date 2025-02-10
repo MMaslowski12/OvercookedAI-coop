@@ -33,6 +33,8 @@ class ParallelGame():
             self.clock = pygame.time.Clock()
 
     def _get_new_actions(self):
+        for board in self.Boards:
+            board.draw()
         if not self.misha_playing:
             keys = pygame.key.get_pressed()
             for board in self.Boards:
@@ -114,7 +116,7 @@ class ParallelGame():
                 self._get_new_actions()
                             
             for board in self.Boards:
-                board.update()
+                board.update(update_display = not self.learning)
             
             if self.learning:  # Only scrutinize boards when bots are playing
                 if update_actions:
@@ -123,7 +125,7 @@ class ParallelGame():
                 # if (self.tick + 1) % (10*60) == 0:  # If the Game is stuck for 10 seconds, terminate it
                 #     self._scrutinize_boards()    <- Leave this be for now (if you implement this, be ready to deal with future states not getting tangled up -- maybe they dont by default?)           
                                 
-            if (self.tick + 1 == self.tick_length):
+            if (self.tick + 1 >= self.tick_length):
                 self.Boards[0].game_over()
                 if self.learning:
                     running = False

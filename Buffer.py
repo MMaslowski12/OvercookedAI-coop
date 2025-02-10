@@ -5,7 +5,7 @@ import time
 import logging
 
 class Buffer():
-    def __init__(self, buffer_size = 65536, batch_size=64, visual_state_dims=(72, 96, 3), numerical_state_dims = 28, action_idx_dims=1, y_target_dims=1):#64, 1e5
+    def __init__(self, buffer_size = 2**17, batch_size=256, visual_state_dims=(72, 96, 3), numerical_state_dims = 28, action_idx_dims=1, y_target_dims=1):#64, 1e5
         # self.tfrecord_file = tfrecord_file
         # self.tfrecord_writer = tf.io.TFRecordWriter(tfrecord_file)  # Initialize TFRecord writer
         # self.reset()
@@ -76,31 +76,32 @@ class Buffer():
     #     return example_proto.SerializeToString()
     
     def add_batch_to_memory(self, states, actions, y_targets):
-        # Handle batch of 64 experiences
-        batch_size = len(states)
-        end_index = self.current_index + batch_size
+        added_batch_size = len(states)
+        end_index = self.current_index + added_batch_size
         actions = np.array(actions).reshape(-1, 1)
         y_targets = np.array(y_targets).reshape(-1, 1)
         
         # Handle wrap-around case
         if end_index > self.buffer_size:
             # Split into two parts
-            first_part = self.buffer_size - self.current_index
-            second_part = batch_size - first_part
+            # first_part = self.buffer_size - self.current_index
+            # second_part = batch_size - first_part
             
-            # First part goes from current_index to end of buffer
-            self.visual_states[self.current_index:] = [s[0] for s in states[:first_part]]
-            self.numerical_states[self.current_index:] = [s[1] for s in states[:first_part]]
-            self.action_idxs[self.current_index:] = actions[:first_part]
-            self.y_targets[self.current_index:] = y_targets[:first_part]
+            # # First part goes from current_index to end of buffer
+            # self.visual_states[self.current_index:] = [s[0] for s in states[:first_part]]
+            # self.numerical_states[self.current_index:] = [s[1] for s in states[:first_part]]
+            # self.action_idxs[self.current_index:] = actions[:first_part]
+            # self.y_targets[self.current_index:] = y_targets[:first_part]
             
-            # Second part wraps to start of buffer
-            self.visual_states[:second_part] = [s[0] for s in states[first_part:]]
-            self.numerical_states[:second_part] = [s[1] for s in states[first_part:]]
-            self.action_idxs[:second_part] = actions[first_part:]
-            self.y_targets[:second_part] = y_targets[first_part:]
+            # # Second part wraps to start of buffer
+            # self.visual_states[:second_part] = [s[0] for s in states[first_part:]]
+            # self.numerical_states[:second_part] = [s[1] for s in states[first_part:]]
+            # self.action_idxs[:second_part] = actions[first_part:]
+            # self.y_targets[:second_part] = y_targets[first_part:]
             
-            self.current_index = second_part
+            # self.current_index = second_part
+            
+            logging.debug(f"Buffer is full. Current index: {self.current_index}, End index: {end_index}")
             
         else:
             # No wrap-around needed

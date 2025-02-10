@@ -26,17 +26,59 @@ time_per_game = np.load('logs/time_per_game.npy')
 file_sizes = np.load('logs/file_sizes.npy')
 rewards = np.load('logs/rewards.npy')
 game_counts = np.load('logs/game_counts.npy')
+time_per_experience = np.load('logs/time_per_experience.npy')
+loss_distribution = np.load('logs/loss_distribution.npy')
+eps = np.load('logs/eps.npy')
+evals_rewards = np.load('logs/evals_rewards.npy')
 
-print(f"Total training time: {time_per_training}")
-print(f"Number of games: {len(time_per_game)}")
-print(f"Total time per game: {np.sum(time_per_game):.2f}s")
-print(f"GAME COUNTS: {game_counts}")
-# Calculate and print average time per game and rewards per game
-print("\nGame Statistics:")
+# Print contents of all data files
+print("\nContents of loss_distribution.npy:")
 print("-" * 50)
-print(f"Average time per game: {np.mean(time_per_game):.2f}s")
-print(f"Average reward per game: {np.mean(rewards):.2f}")
+try:
+    loss_dist = np.load('logs/loss_distribution.npy')
+    print(loss_dist)
+except Exception as e:
+    print(f"Error loading loss_distribution.npy: {e}")
 
+print("\nContents of losses1.npy:")
+print("-" * 50)
+print(losses1)
+
+print("\nContents of losses2.npy:") 
+print("-" * 50)
+print(losses2)
+
+print("\nContents of rewards.npy:")
+print("-" * 50)
+print(rewards)
+
+print("\nContents of game_counts.npy:")
+print("-" * 50)
+print(game_counts)
+
+print("\nContents of time_per_training.npy:")
+print("-" * 50)
+print(time_per_training)
+
+print("\nContents of time_per_game.npy:")
+print("-" * 50)
+print(time_per_game)
+
+print("\nContents of time_per_experience.npy:")
+print("-" * 50)
+print(time_per_experience)
+
+print("\nContents of loss_distribution.npy:")
+print("-" * 50)
+print(loss_distribution)
+
+print("\nContents of eps.npy:")
+print("-" * 50)
+print(eps)
+
+print("\nEvals: rewards.npy:")
+print("-" * 50)
+print(evals_rewards)
 
 # Plotting the data
 plt.figure(figsize=(8, 5))  # Optional: adjust figure size

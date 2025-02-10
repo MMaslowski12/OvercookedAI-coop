@@ -1,6 +1,7 @@
 import numpy as np
 from Objects import Floor
-from GameClass import Game
+from GameClass import Game, ParallelGame
+from map_generator import generate_test_map
 from Agent import Agent
 import pygame
 
@@ -14,10 +15,18 @@ def generate_q_value_heatmap(player=1, normalized=True, use_max_q=True):
     Returns a numpy array of Q-values corresponding to floor positions.
     """
     Misha = Agent(learning=False, save_file="Misha"+str(player)+".keras") 
-    GameObj = Game(misha_playing=True, tick_length=1000, models = [Misha, Misha], learning = False, debug = True, visual_debug = True)
+    GameObj = ParallelGame(num_boards=1,
+        misha_playing=True,
+        learning=False,
+        tick_length=1000,
+        models=[Misha, Misha],
+        debug=False,
+        display=True,
+        map_generator=generate_test_map)
 
+    board = GameObj.Boards[0]
     # Get player object based on parameter
-    player_obj = GameObj.Board.Player1 if player == 1 else GameObj.Board.Player2
+    player_obj = board.Player1 if player == 1 else board.Player2
 
     # Store original player position
     original_pos = player_obj.rect.center
@@ -28,7 +37,7 @@ def generate_q_value_heatmap(player=1, normalized=True, use_max_q=True):
     min_x = min_y = float('inf')
     
     # Find valid floor positions and heatmap dimensions
-    for obj in GameObj.Board.StaticObjects:
+    for obj in board.StaticObjects:
         if isinstance(obj, Floor):
             x, y = obj.rect.center
             floor_positions.append((x, y))
@@ -46,12 +55,13 @@ def generate_q_value_heatmap(player=1, normalized=True, use_max_q=True):
     for pos in floor_positions:
         # Move player to test position
         player_obj.rect.center = pos
-        GameObj.Board.draw()
+        board.draw()
         
         # Get state and Q-values
-        visual_state = GameObj.Board._get_visual_data()
-        numerical_state = GameObj.Board._get_numerical_data()
-        q_values = Misha.get_qs([visual_state, numerical_state])
+        visual_state = board._get_visual_data()
+        numerical_state = board._get_numerical_data()
+        
+        q_values = Misha.get_qs_and_idxs(state=[[visual_state, numerical_state]], mask=player_obj._get_mask(), batch_size=1)[0]
         q_value = np.max(q_values) if use_max_q else q_values[4]  # Use max Q or Q-value for action 4
         
         # Convert position to grid coordinates
@@ -73,12 +83,11 @@ def generate_q_value_heatmap(player=1, normalized=True, use_max_q=True):
         if std != 0 and normalized:
             heatmap[non_zero_mask] = (heatmap[non_zero_mask] - mean) / std
     
-    return heatmap, GameObj.Board, mean, std
+    return heatmap, board, mean, std
 
 print("xd?")
 player = 1
-# Generate heatmap for Player1 by default
-heatmap, board, mean, std = generate_q_value_heatmap(player, normalized=False, use_max_q=False)
+# Generate heatmap for Player1 by defaultheatmap, board, mean, std = generate_q_value_heatmap(player, normalized=False)
 
 def display_heatmap(heatmap, board):
     # Create a surface for the heatmap

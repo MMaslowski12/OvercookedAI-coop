@@ -89,7 +89,7 @@ class Board:
         self.Player1.get_actions()
         self.Player2.get_actions()
     
-    def update(self, update_actions=False): 
+    def update(self, update_actions=False, update_display=True): 
         if not self.is_game_over:
             start_time = time.time()
             self.Interactables.update()
@@ -104,7 +104,8 @@ class Board:
             self.Menu.update()
             time3 = time.time() - start_time
             start_time = time.time()
-            self.draw()
+            if update_display:
+                self.draw()
             time4 = time.time() - start_time
             return time1, time2, time3, time4
         
@@ -240,5 +241,8 @@ class Board:
         rewards += sum(fish_points[:fish_on_menu])
         rewards += sum(potato_points[:potato_on_menu])
         rewards += sum(plate_points[:plate_on_menu])
+        
+        rewards += self.Player1.hit_the_wall_penalty
+        rewards += self.Player2.hit_the_wall_penalty
         
         return float(rewards)

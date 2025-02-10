@@ -47,6 +47,7 @@ class Player(Object):
         self.time_saving = 0
         self.time_drawing = 0
         self.time_adding_experience = 0
+        self.hit_the_wall_penalty = 0
         
     def is_player(self):
         """
@@ -186,7 +187,7 @@ class Player(Object):
         Args:
             **kwargs: Expected to contain 'keys' for current key states.
         """
-        initial_rewards = self.board.get_rewards()     
+        self.hit_the_wall_penalty = 0
         self.action_cooldown -= 1
         
         keys = kwargs["keys"]
@@ -251,6 +252,7 @@ class Player(Object):
         Revert the player's position to its previous location upon collision.
         """
         self.rect.x, self.rect.y = self.rect.x - self.last_move[0], self.rect.y - self.last_move[1]
+        self.hit_the_wall_penalty = -5
         
     #Check for collisions with Walls and the other players
     def _check_collision(self, NonPassables, Players):
