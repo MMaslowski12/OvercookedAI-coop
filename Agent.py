@@ -48,7 +48,7 @@ class Agent:
             self.model = tf.keras.models.load_model(save_file)
             
         self.learning = learning
-        self.eps_ticks = 0
+        self.eps_ticks = 10**5
         
         self.experience_state_batch = []
         self.experience_rewards_batch = []
@@ -78,7 +78,6 @@ class Agent:
         
         return eps
     
-    @tf.function(reduce_retracing=True)
     def get_qs_and_idxs(self, state=None, mask=None, batch_size=1, random_exploration = False):
         assert len(state) == batch_size, f"Expected first dimension of states to be {batch_size}, but got {state.shape}"
         
@@ -148,7 +147,8 @@ class Agent:
             dataset = self.buffer.create_dataset()
             
             losses_in_epoch = []
-            for batch in tqdm(dataset, desc=f"Epoch {epoch+1}/{epochs}", colour='green'):   
+            # for batch in tqdm(dataset, desc=f"Epoch {epoch+1}/{epochs}", colour='green'): 
+            for batch in dataset:   
                 visual_state = batch["visual_state"]
                 numerical_state = batch["numerical_state"]
                 action_idx_batch = batch["action_idx"]

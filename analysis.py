@@ -26,10 +26,10 @@ time_per_game = np.load('logs/time_per_game.npy')
 file_sizes = np.load('logs/file_sizes.npy')
 rewards = np.load('logs/rewards.npy')
 game_counts = np.load('logs/game_counts.npy')
-time_per_experience = np.load('logs/time_per_experience.npy')
+# time_per_experience = np.load('logs/time_per_experience.npy')
 loss_distribution = np.load('logs/loss_distribution.npy')
-eps = np.load('logs/eps.npy')
-evals_rewards = np.load('logs/evals_rewards.npy')
+# eps = np.load('logs/eps.npy')
+# evals_rewards = np.load('logs/evals_rewards.npy')
 
 # Print contents of all data files
 print("\nContents of loss_distribution.npy:")
@@ -64,21 +64,21 @@ print("\nContents of time_per_game.npy:")
 print("-" * 50)
 print(time_per_game)
 
-print("\nContents of time_per_experience.npy:")
-print("-" * 50)
-print(time_per_experience)
+# print("\nContents of time_per_experience.npy:")
+# print("-" * 50)
+# print(time_per_experience)
 
 print("\nContents of loss_distribution.npy:")
 print("-" * 50)
 print(loss_distribution)
 
-print("\nContents of eps.npy:")
-print("-" * 50)
-print(eps)
+# print("\nContents of eps.npy:")
+# print("-" * 50)
+# print(eps)
 
-print("\nEvals: rewards.npy:")
-print("-" * 50)
-print(evals_rewards)
+# print("\nEvals: rewards.npy:")
+# print("-" * 50)
+# print(evals_rewards)
 
 # Plotting the data
 plt.figure(figsize=(8, 5))  # Optional: adjust figure size
