@@ -5,7 +5,10 @@ import logging
 import tensorflow as tf
 import numpy as np
 import time
+from expert_agent import Expert
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+
+Expert = Expert()
         
 class Batch():
     def __init__(self):
@@ -102,6 +105,9 @@ class ParallelGame():
         self.last_rewards = [board.get_rewards() for board in self.Boards]
         
         while running:
+            if self.tick % 100 == 0:
+                print(Expert.get_decision(self.Boards[0].get_expert_state()))
+                
             if self.display:
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:

@@ -177,6 +177,68 @@ class Board:
             
         return reward
         
+    def get_expert_state(self):
+        """
+        Returns a dictionary of inputs required by the expert system,
+        based solely on subroutine-relevant information (ignoring any menu state).
+
+        The dictionary includes:
+          - players: For each player, their current position and the type of item they are holding.
+          - stations: Positions of key stations:
+              • fish_crate: Where raw fish are obtained.
+              • chopping_station: Chopping boards (CBoard objects).
+              • fryer: Fryers.
+              • plate_stack: Plate stations.
+              • delivery_area: A region computed as the rightmost 10% of the board.
+          - map_layout: Basic layout info (corner coordinates and screen size).
+        """
+        expert_state = {}
+
+        # --- Player-Specific State ---
+        players_state = {}
+        for label, player in [("player1", self.Player1), ("player2", self.Player2)]:
+            players_state[label] = {
+                "position": (player.rect.x, player.rect.y),
+                "holding": type(player.hands).__name__ if player.hands is not None else None
+            }
+        expert_state["players"] = players_state
+
+        # --- Stations (Global Game State) ---
+        stations = {
+            "fish_crate": [],        # Positions for fish crate(s) (raw fish supply)
+            "chopping_station": [],  # Positions of chopping boards (CBoard objects)
+            "fryer": [],             # Positions of Fryers
+            "plate_stack": []        # Positions for Plate stations
+        }
+        for obj in self.StaticObjects:
+            class_name = obj.__class__.__name__
+            if class_name == "FishCrate":
+                stations["fish_crate"].append(obj.rect.center)
+            elif class_name == "CBoard":
+                stations["chopping_station"].append(obj.rect.center)
+            elif class_name == "Fryer":
+                stations["fryer"].append(obj.rect.center)
+            elif class_name == "PlateCrate":
+                stations["plate_stack"].append(obj.rect.center)
+
+        # --- Delivery Area ---
+        # Using map_layout (corner_coordinates) to define the delivery area as the rightmost 10% of the board.
+        START_X, START_Y, END_X, END_Y = self.corner_coordinates
+        board_width = END_X - START_X
+        delivery_width = int(0.1 * board_width)  # 10% of board width
+        stations["delivery_area"] = {
+            "top_left": (END_X - delivery_width, START_Y),
+            "bottom_right": (END_X, END_Y)
+        }
+        expert_state["stations"] = stations
+
+        # --- Map Layout Details ---
+        expert_state["map_layout"] = {
+            "corner_coordinates": self.corner_coordinates,
+            "screen_size": self.screen.get_size()
+        }
+
+        return expert_state
 
     def get_rewards(self):
         '''

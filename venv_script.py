@@ -1,6 +1,7 @@
 import subprocess
 import sys
 import os
+import platform
 
 def run_command(command, description=""):
     """Helper function to run a command and handle errors."""
@@ -42,13 +43,38 @@ def activate_venv(venv_name="venv"):
         run_command([sys.executable, "-m", "venv", venv_name])
         print("Venv created")
         
-    venv_python = os.path.join(venv_name, "bin", "python")
+    # Determine the correct path based on the operating system
+    if platform.system() == "Windows":
+        venv_python = os.path.join(venv_name, "Scripts", "python.exe")
+    else:
+        venv_python = os.path.join(venv_name, "bin", "python")
+        
     subprocess.check_call([venv_python, "-c", "print('Hello, World!')"])
+    
+    # Print activation instructions
+    print_activation_instructions(venv_name)
+    
     return venv_python
+
+def print_activation_instructions(venv_name="venv"):
+    """Print instructions for activating the virtual environment."""
+    print("\n=== HOW TO ACTIVATE THE VIRTUAL ENVIRONMENT ===")
+    
+    if platform.system() == "Windows":
+        print(f"Run: {venv_name}\\Scripts\\activate")
+    else:
+        print(f"Run: source {venv_name}/bin/activate")
+    
+    print("\nAfter activation, your command prompt should show the environment name.")
+    print("When you're done, type 'deactivate' to exit the virtual environment.")
+    print("================================================\n")
     
 def get_requirements(venv_name="venv", requirements_file="requirements.txt"):
     #Virtual environment - set it up as venv_python to activate commands with it later
-    venv_python = os.path.join(venv_name, "bin", "python")
+    if platform.system() == "Windows":
+        venv_python = os.path.join(venv_name, "Scripts", "python.exe")
+    else:
+        venv_python = os.path.join(venv_name, "bin", "python")
     subprocess.check_call([venv_python, "-m", "pip", "install", "-r", requirements_file])
 
 def setup_venv(venv_python):
@@ -87,9 +113,8 @@ def setup_venv(venv_python):
     subprocess.check_call([venv_python, "-m", "ipykernel" ,"install", "--user", "--name=venv"])
     print("Installed the kernel")
     
-    
-
 if __name__ == "__main__":
     # List of packages to install
     venv_python = activate_venv()
     setup_venv(venv_python)
+    print_activation_instructions()  # Print instructions again at the end
