@@ -299,6 +299,5 @@ class TrashCan(CBelt):
         Parameters:
             resource: The resource to be discarded.
         """
-        print("RESOURCE GIVEN")
         resource.kill()
 
