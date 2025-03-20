@@ -277,6 +277,7 @@ class CBelt(CounterTop):
         Parameters:
             resource: The resource (dish) to be served.
         """
+        
         self.menu.serve_dish(resource)
         resource.kill()
 
@@ -298,5 +299,6 @@ class TrashCan(CBelt):
         Parameters:
             resource: The resource to be discarded.
         """
+        print("RESOURCE GIVEN")
         resource.kill()
 

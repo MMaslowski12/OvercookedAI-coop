@@ -1,7 +1,7 @@
 import pygame
 from constants import *
 from foods import Plate
-from objects import Object, Sources, CounterTops, CBoard, Fryer, Walls
+from objects import Object, Sources, CounterTops, CBoard, Fryer, Walls, CBelt, TrashCan
 import math
 
 Players = pygame.sprite.Group()
@@ -151,6 +151,26 @@ class Player(Object):
             #To put it on a fryer, it must be chopped
             if(isinstance(table, Fryer) and not self.hands.chopped):
                 condition = False
+
+            if(isinstance(table, TrashCan)):
+                print("TRASH CAN")
+                print(isinstance(table, CBelt))
+                print(isinstance(table, TrashCan))
+                print(isinstance(self.hands, Plate))
+
+            if((isinstance(table, CBelt)) and (not isinstance(table, TrashCan)) and (not isinstance(self.hands, Plate))):
+                print("CANNOT GIVE THE POTATO")
+                print(isinstance(table, CBelt))
+                print(isinstance(table, TrashCan))
+                print(isinstance(self.hands, Plate))
+                condition = False
+
+            if(isinstance(table, TrashCan)):
+                print("END OF TRASH CAN")
+                print(isinstance(table, CBelt))
+                print(isinstance(table, TrashCan))
+                print(isinstance(self.hands, Plate))
+            
                 
             if(isinstance(self.hands, Plate) and (isinstance(table, Fryer) or isinstance(table, CBoard))):
                 condition = False
