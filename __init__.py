@@ -1,0 +1,3 @@
+"""
+OvercookedAI-coop package
+""" 
