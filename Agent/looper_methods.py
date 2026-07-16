@@ -1,7 +1,7 @@
 from together import Together
 from dotenv import load_dotenv
 from .looper_constants import reasoner_model, executor_model, syntaxer_model
-from .utils import tensor_to_base64, display_image_from_base64
+from .utils import tensor_to_base64, display_image_from_base64, combine_images_side_by_side
 import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
@@ -17,8 +17,50 @@ class LooperMethods:
     def __init__(self, prompt_base):
         self.prompt_base = prompt_base
         self.syntaxer_ratio = [0, 0]
+        self.fresh_memory_image = None
+        self.fresh_memory_reasoning = None
 
-    def reason(self, image, tensor_type="tensorflow"):
+
+    def _add_reasoning_visuals(self, past_image, current_image):
+        content = []
+        # Add descriptive text about the images
+        if past_image is not None:
+            # Combine past and current images side by side using the utility function
+            combined_image_base64 = combine_images_side_by_side(past_image, current_image)
+            
+            if combined_image_base64:
+                content.append({"type": "text", "text": f"### Past state of the game (before your last reasoning) and current state of the game are combined in the image below. The past state is on the left, and the current state is on the right.\n"})
+
+                # Add combined image
+                content.append({
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/png;base64,{combined_image_base64}"
+                    }
+                })
+
+            else:
+                # Fallback to just showing current image
+                content.append({"type": "text", "text": f"### Current state of the game: \n"})
+                content.append({
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/png;base64,{current_image}"
+                    }
+                })
+
+        else:
+            content.append({"type": "text", "text": f"### Current state of the game: \n"})
+            content.append({
+                "type": "image_url",
+                "image_url": {
+                    "url": f"data:image/png;base64,{current_image}"
+                }
+            })
+        
+        return content
+    
+    def reason(self, remaining_actions, current_image, past_image=None, past_reasoning=None, tensor_type="tensorflow"):
         """
         Analyze an image from a tensor using the Together.ai API.
         
@@ -29,8 +71,13 @@ class LooperMethods:
         Returns:
             The model's analysis of the image
         """
+        if past_image is None:
+            past_image = self.fresh_memory_image
+        if past_reasoning is None:
+            past_reasoning = self.fresh_memory_reasoning
+
         # Get prompt from self.prompt_base
-        current_prompt = self.prompt_base.get_reasoner_prompt()
+        current_prompt = self.prompt_base.get_reasoner_prompt(past_answer=past_reasoning, remaining_actions=remaining_actions)
             
         # Prepare messages with image content
         messages = []
@@ -41,14 +88,10 @@ class LooperMethods:
         # Add system prompt to the user query if provided
         content.append({"type": "text", "text": f"### System Prompt\n{current_prompt}"})
 
-        base64_image = tensor_to_base64(image, tensor_type=tensor_type)
-        content.append({
-            "type": "image_url",
-            "image_url": {
-                "url": f"data:image/png;base64,{base64_image}"
-            }
-        })
-        display_image_from_base64(base64_image)
+        # Convert current image to base64
+        current_image = tensor_to_base64(current_image, tensor_type=tensor_type)
+        
+        content.extend(self._add_reasoning_visuals(past_image, current_image))
 
         content.append({"type": "text", "text": "### Your Response: \n"})
         
@@ -62,6 +105,10 @@ class LooperMethods:
         print("--------------------------------")
         print("REASONING RESPONSE: \n", response.choices[0].message.content)
         print("--------------------------------")
+
+        self.fresh_memory_image = current_image
+        self.fresh_memory_reasoning = response.choices[0].message.content
+
         return response.choices[0].message.content
 
     def executor(self, reasoning_answer):

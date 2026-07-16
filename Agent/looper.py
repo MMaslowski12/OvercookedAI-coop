@@ -15,7 +15,7 @@ class Looper:
         self.prompt_base = PromptBaseClass(player=player)
         self.methods = LooperMethods(prompt_base=self.prompt_base)
         self.pipeline = {
-            "Reasoner": (self.methods.reason, "Executor"),
+            "Reasoner": (None, "Executor"), #The function is given at the start of the thread instead
             "Executor": (self.methods.executor, "SyntaxChecker"),
             "SyntaxChecker": (lambda input: self.methods.syntaxer(input=input, grammar_function=self.grammar_function), None),
         }
@@ -27,7 +27,7 @@ class Looper:
 
     def update_agent(self, image):
         if self.thread_manager.threads_number < self.max_threads:
-            self.thread_manager.add_thread(lambda img: self.methods.reason(img), "Reasoner", image)
+            self.thread_manager.add_thread(lambda img: self.methods.reason(remaining_actions=self.policy, current_image=image), "Reasoner", image)
 
         # Create a list of completed threads first
         completed_threads = []

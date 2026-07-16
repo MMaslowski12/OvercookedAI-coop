@@ -92,3 +92,47 @@ def display_image_from_base64(base64_str):
     
     # Display the image
     image.show()
+
+def combine_images_side_by_side(image1_base64, image2_base64):
+    """
+    Combine two base64 encoded images side by side and return the result as a base64 string.
+    
+    Args:
+        image1_base64: Base64 encoded string of the first image
+        image2_base64: Base64 encoded string of the second image
+        
+    Returns:
+        Base64 encoded string of the combined image
+    """
+    try:
+        # Decode base64 images
+        img1 = Image.open(BytesIO(base64.b64decode(image1_base64)))
+        img2 = Image.open(BytesIO(base64.b64decode(image2_base64)))
+        
+        # Create a new image with both images side by side
+        # Add 2 pixels for the separator line
+        total_width = img1.width + img2.width + 2
+        max_height = max(img1.height, img2.height)
+        combined_img = Image.new('RGB', (total_width, max_height))
+        
+        # Paste images
+        combined_img.paste(img1, (0, 0))
+        
+        # Draw a vertical separator line (2 pixels wide)
+        for y in range(max_height):
+            for x in range(2):
+                combined_img.putpixel((img1.width + x, y), (255, 255, 255))  # White line
+        
+        # Paste second image after the separator line
+        combined_img.paste(img2, (img1.width + 2, 0))
+        
+        # Convert combined image to base64
+        buffered = BytesIO()
+        combined_img.save(buffered, format="PNG")
+        combined_image_base64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
+        
+        display_image_from_base64(combined_image_base64)
+        return combined_image_base64
+    except Exception as e:
+        print(f"Error combining images: {e}")
+        return None
